@@ -4,6 +4,11 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { InvalidPhoneFilter } from './common/invalid-phone.filter';
 
+// Traccar event ids are BigInt (alerts.traccarEventId); Express JSON can't serialize them.
+(BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
+  return this.toString();
+};
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('v1');

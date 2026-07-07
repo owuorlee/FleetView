@@ -39,12 +39,14 @@ curl -X POST http://localhost:3000/v1/auth/otp/request -H "Content-Type: applica
 - **Vehicles:** `GET/POST /v1/vehicles`, `GET /v1/vehicles/:id`, `GET /v1/vehicles/:id/position` — registry with Traccar device mirroring and knots→km/h conversion.
 - **Traccar:** REST client (devices, positions, commands) + resilient WebSocket subscriber exposing `positions$`/`events$` streams for the alert pipeline.
 - **Schema:** full Prisma data model from spec §3 (users→recovery links).
+- **Alerts (spec §6):** Traccar `events$` → rules (`alert-rules.ts`) → dedup buckets (repeat counting on the same `type:vehicle:bucket`) → fan-out: in-app always, SMS for critical types with bilingual EN/SW titles; critical alerts enriched with last-known position. `GET /v1/alerts`, `POST /v1/alerts/:id/ack`.
+- **Commands (spec §5):** two-step immobilization — `POST /v1/vehicles/:id/commands/immobilize` (safety gate: blocked above 10 km/h or stale/no fix; audited even when blocked) → OTP by SMS → `POST /v1/commands/:id/confirm` (10-min window, re-runs the gate, dispatches `engineStop` over GPRS or `RELAY,1#` / `setdigout 1` by SMS fallback when offline). Single-step audited restore. `GET /v1/commands/:id` for the audit trail.
 
 ## Next (build order)
 
-1. Alert pipeline: consume `events$` → rules → dedup/throttle → deliveries (spec §6).
-2. Commands module: two-step immobilization + safety gate + audit (spec §5).
-3. Billing: subscriptions/invoices, Daraja STK + C2B webhooks (spec §7) — **re-verify Daraja endpoints on the Safaricom portal first**.
-4. Organizations/RBAC beyond personal ownership; financier module (spec §4.1).
+1. Billing: subscriptions/invoices, Daraja STK + C2B webhooks (spec §7) — **re-verify Daraja endpoints on the Safaricom portal first**.
+2. Organizations/RBAC beyond personal ownership; financier module (spec §4.1).
+3. Client-facing live stream (`/v1/stream` WebSocket fan-out of positions).
+4. Delivery confirmation for commands (watch position attributes for relay state) and vehicle `status` driven by it.
 
 Production notes: move JWT to RS256 keys, OTP store to Redis, and add rate limiting at Nginx per spec §10.

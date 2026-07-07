@@ -22,6 +22,6 @@ import { OtpStore } from './otp.store';
   ],
   controllers: [AuthController],
   providers: [AuthService, OtpStore, JwtAuthGuard],
-  exports: [JwtAuthGuard],
+  exports: [JwtAuthGuard, OtpStore],
 })
 export class AuthModule {}

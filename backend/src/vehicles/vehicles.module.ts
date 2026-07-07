@@ -7,5 +7,6 @@ import { VehiclesService } from './vehicles.service';
   imports: [TraccarModule],
   controllers: [VehiclesController],
   providers: [VehiclesService],
+  exports: [VehiclesService],
 })
 export class VehiclesModule {}
