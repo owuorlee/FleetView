@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FleetView — Alerts</title>
+<link rel="stylesheet" href="styles.css">
+<script>
+  function setLang(l) {
+    document.querySelectorAll('[data-en]').forEach(function (el) {
+      el.textContent = el.getAttribute(l === 'sw' ? 'data-sw' : 'data-en');
+    });
+    document.getElementById('btn-en').className = 'btn small ' + (l === 'en' ? 'primary' : 'ghost');
+    document.getElementById('btn-sw').className = 'btn small ' + (l === 'sw' ? 'primary' : 'ghost');
+  }
+</script>
+</head>
+<body>
+  <div class="proto-bar"><a href="index.html">← index</a> · <a href="home.html">Home</a> · <a href="map.html">Map</a> · <a href="immobilize.html">Immobilize</a> · <a class="here">Alerts</a> · <a href="renew.html">Renew</a> · <a href="financier.html">Financier</a></div>
+
+  <div class="phone">
+    <div class="appbar">
+      <span class="title" data-en="Alerts" data-sw="Arifa">Alerts</span>
+      <button id="btn-en" class="btn small primary" onclick="setLang('en')">EN</button>
+      <button id="btn-sw" class="btn small ghost" onclick="setLang('sw')">SW</button>
+    </div>
+
+    <div class="content">
+      <div class="row">
+        <span class="chip crit" data-en="Critical" data-sw="Hatari">Critical</span>
+        <span class="chip parked" data-en="Movement" data-sw="Mwendo">Movement</span>
+        <span class="chip parked" data-en="Geofence" data-sw="Mipaka">Geofence</span>
+        <span class="chip parked" data-en="Billing" data-sw="Malipo">Billing</span>
+      </div>
+
+      <div class="sub" style="color:var(--grey3); font-size:12px; font-weight:700" data-en="TODAY" data-sw="LEO">TODAY</div>
+
+      <div class="alert-row crit">
+        <span class="ic">🔌</span>
+        <div style="flex:1">
+          <div class="t" data-en="⚠ Power disconnected!" data-sw="⚠ Umeme umekatwa!">⚠ Power disconnected!</div>
+          <div class="d" data-en="KMFB 421C · Last seen: Tom Mboya St, 14:02" data-sw="KMFB 421C · Ilionekana mwisho: Tom Mboya St, 14:02">KMFB 421C · Last seen: Tom Mboya St, 14:02</div>
+          <div class="row" style="margin-top:8px">
+            <a class="btn danger small" href="map.html" data-en="View live" data-sw="Angalia sasa">View live</a>
+            <a class="btn ghost small" href="#" data-en="Acknowledge" data-sw="Thibitisha">Acknowledge</a>
+          </div>
+        </div>
+        <span class="dot"></span>
+      </div>
+
+      <div class="alert-row">
+        <span class="ic">📡</span>
+        <div style="flex:1">
+          <div class="t" data-en="Possible GPS jamming detected" data-sw="Huenda GPS inazuiliwa">Possible GPS jamming detected</div>
+          <div class="d" data-en="KDA 123A · near Industrial Area · 11:47" data-sw="KDA 123A · karibu na Industrial Area · 11:47">KDA 123A · near Industrial Area · 11:47</div>
+        </div>
+        <span class="dot"></span>
+      </div>
+
+      <div class="alert-row">
+        <span class="ic">🚀</span>
+        <div style="flex:1">
+          <div class="t" data-en="Overspeed: 94 km/h (limit 80)" data-sw="Mwendo kasi: 94 km/h (kikomo 80)">Overspeed: 94 km/h (limit 80)</div>
+          <div class="d" data-en="KMFB 421C · Kisumu–Kakamega Rd · 09:31" data-sw="KMFB 421C · Barabara ya Kisumu–Kakamega · 09:31">KMFB 421C · Kisumu–Kakamega Rd · 09:31</div>
+        </div>
+      </div>
+
+      <div class="alert-row">
+        <span class="ic">🔑</span>
+        <div style="flex:1">
+          <div class="t" data-en="Engine ON outside allowed hours" data-sw="Injini imewashwa nje ya saa zilizoruhusiwa">Engine ON outside allowed hours</div>
+          <div class="d" data-en="KDA 123A · Home geofence · 05:12" data-sw="KDA 123A · Mipaka ya nyumbani · 05:12">KDA 123A · Home geofence · 05:12</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <a href="home.html"><span class="ic">🏠</span><span data-en="Home" data-sw="Nyumbani">Home</span></a>
+      <a href="map.html"><span class="ic">🗺</span><span data-en="Map" data-sw="Ramani">Map</span></a>
+      <a class="active" href="alerts.html"><span class="ic">🔔</span><span data-en="Alerts" data-sw="Arifa">Alerts</span></a>
+      <a href="renew.html"><span class="ic">⋯</span><span data-en="More" data-sw="Zaidi">More</span></a>
+    </div>
+  </div>
+  <p class="note">EN/SW toggle live on this screen — strings from the bilingual copy table in doc 03 §5.</p>
+</body>
+</html>

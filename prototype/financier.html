@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FleetView — Financier console</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="proto-bar"><a href="index.html">← index</a> · <a href="home.html">Home</a> · <a href="map.html">Map</a> · <a href="immobilize.html">Immobilize</a> · <a href="alerts.html">Alerts</a> · <a href="renew.html">Renew</a> · <a class="here">Financier</a></div>
+
+  <div class="desktop">
+    <div class="topbar">
+      <span class="logo">FleetView</span>
+      <span>Boda Capital Ltd — Ops Console</span>
+      <span class="spacer" style="flex:1"></span>
+      <span>Kiprop C. · financier_ops</span>
+    </div>
+    <div class="body">
+      <div class="side">
+        <a href="#">Portfolio</a>
+        <a class="active" href="#">Defaulters</a>
+        <a href="#">Recoveries</a>
+        <a href="#">Reports</a>
+        <a href="#">Webhooks / API</a>
+        <a href="#">Audit log</a>
+      </div>
+      <div class="main">
+        <div class="kpis">
+          <div class="kpi"><div class="n">1,284</div><div class="l">Units tracked</div></div>
+          <div class="kpi"><div class="n" style="color:var(--primary)">97.6 %</div><div class="l">Online (24 h)</div></div>
+          <div class="kpi"><div class="n" style="color:var(--amber)">61</div><div class="l">Arrears 8–30 d</div></div>
+          <div class="kpi"><div class="n" style="color:var(--red)">17</div><div class="l">Default (30 d+)</div></div>
+          <div class="kpi"><div class="n">9</div><div class="l">Immobilized</div></div>
+        </div>
+
+        <div class="row">
+          <b>Defaulters queue</b>
+          <span class="sub" style="color:var(--grey3); font-size:12px">auto-flagged: arrears ≥ 14 days (policy v3)</span>
+          <span class="spacer"></span>
+          <a class="btn ghost small" href="#">Import CSV</a>
+          <a class="btn danger small" href="#">Review batch (2 selected)</a>
+        </div>
+
+        <table class="grid">
+          <tr><th></th><th>Unit</th><th>Loan ref</th><th>Arrears</th><th>Last position</th><th>Safety verdict</th><th>Flag</th><th></th></tr>
+          <tr class="selected">
+            <td>☑</td><td><b>KMFB 421C</b></td><td>BC-2024-8841</td><td style="color:var(--red)"><b>21 d</b></td>
+            <td>Kondele, Kisumu · 2 min ago</td><td><span class="chip moving">✓ Stationary 34 min</span></td>
+            <td><span class="chip immob">Flagged</span></td><td><a class="btn ghost small" href="#">Audit</a></td>
+          </tr>
+          <tr class="selected">
+            <td>☑</td><td><b>KMEZ 108B</b></td><td>BC-2025-0113</td><td style="color:var(--red)"><b>18 d</b></td>
+            <td>Kawangware · 7 min ago</td><td><span class="chip moving">✓ Stationary 12 min</span></td>
+            <td><span class="chip immob">Flagged</span></td><td><a class="btn ghost small" href="#">Audit</a></td>
+          </tr>
+          <tr>
+            <td>☐</td><td><b>KMDL 764F</b></td><td>BC-2024-7702</td><td style="color:var(--amber)"><b>15 d</b></td>
+            <td>Thika Rd · moving 46 km/h</td><td><span class="chip crit">✗ Moving — blocked</span></td>
+            <td><span class="chip immob">Flagged</span></td><td><a class="btn ghost small" href="#">Notify when stopped</a></td>
+          </tr>
+          <tr>
+            <td>☐</td><td><b>KMCA 330J</b></td><td>BC-2023-4419</td><td style="color:var(--red)"><b>44 d</b></td>
+            <td>offline 3 d · last: Gikomba</td><td><span class="chip parked">— Offline (SMS path)</span></td>
+            <td><span class="chip crit">In recovery</span></td><td><a class="btn primary small" href="#">Live link</a></td>
+          </tr>
+        </table>
+
+        <div class="banner">🔒 Batch immobilize requires per-unit safety pass + your password + a reason. Every action is written to the audit log with your name. Auto-cutoff is never automatic — a human always confirms.</div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Recovery "Live link" opens a no-login, expiring public page with the vehicle's live position — shareable with police/recovery agents (doc 03 §3.8).</p>
+</body>
+</html>

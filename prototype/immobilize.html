@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FleetView — Immobilize</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="proto-bar"><a href="index.html">← index</a> · <a href="home.html">Home</a> · <a href="map.html">Map</a> · <a class="here">Immobilize</a> · <a href="alerts.html">Alerts</a> · <a href="renew.html">Renew</a> · <a href="financier.html">Financier</a></div>
+
+  <div class="phone">
+    <div class="appbar">
+      <a class="back" href="map.html">←</a>
+      <span class="title" style="color:var(--red)">⚠ Cut engine?</span>
+    </div>
+
+    <div class="content">
+      <div class="card">
+        <h3>🏍 KMFB 421C</h3>
+        <div class="sub">Kondele, Kisumu</div>
+        <div class="row" style="margin-top:8px">
+          <span class="chip parked">◌ Stationary 12 min</span>
+          <span class="sub">fix 14 s old</span>
+        </div>
+      </div>
+
+      <div class="verdict pass">✓ Safety check passed — vehicle is stationary</div>
+
+      <div class="card">
+        <div class="sub" style="margin-bottom:6px">Reason (required)</div>
+        <div class="row" style="border:1px solid var(--grey2); border-radius:10px; padding:10px 12px">
+          <b>Theft suspected</b><span class="spacer"></span>▾
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sub" style="margin-bottom:8px; text-align:center">Enter your PIN</div>
+        <div class="pin"><b>•</b><b>•</b><b>•</b><b>_</b></div>
+      </div>
+
+      <a class="slide" href="alerts.html">SLIDE TO CUT ENGINE &nbsp;≫</a>
+      <a class="btn ghost block" href="map.html">Cancel</a>
+
+      <div class="banner offline">If the tracker is offline, the command is retried by SMS automatically. Every action is logged.</div>
+    </div>
+
+    <div class="nav">
+      <a href="home.html"><span class="ic">🏠</span>Home</a>
+      <a href="map.html"><span class="ic">🗺</span>Map</a>
+      <a href="alerts.html"><span class="ic">🔔</span>Alerts</a>
+      <a href="renew.html"><span class="ic">⋯</span>More</a>
+    </div>
+  </div>
+  <p class="note">Blocked variant: the slider is replaced by "🚫 Vehicle is moving at 47 km/h. For safety, engine cut is disabled while moving. We'll notify you when it stops."</p>
+</body>
+</html>

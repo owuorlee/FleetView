@@ -1,0 +1,475 @@
+// FleetView app database — mirrors the ERD in 01-technical-spec.md §3.
+// Traccar keeps its own `traccar` database; we store traccar_* id references only.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrgType {
+  personal
+  fleet
+  sacco
+  financier
+  insurer
+}
+
+enum OrgRole {
+  owner
+  admin
+  manager
+  viewer
+  installer
+  recovery_agent
+  financier_ops
+}
+
+enum VehicleType {
+  car
+  motorbike
+  tuktuk
+  truck
+}
+
+enum VehicleStatus {
+  active
+  immobilized
+  suspended
+  in_recovery
+}
+
+enum DeviceProtocol {
+  gt06
+  teltonika
+}
+
+enum DeviceStatus {
+  in_stock
+  provisioning
+  installed
+  faulty
+  retired
+}
+
+enum SimStatus {
+  in_stock
+  active
+  dormant
+  blocked
+}
+
+enum SubscriptionStatus {
+  active
+  grace
+  suspended
+  cancelled
+}
+
+enum InvoiceStatus {
+  pending
+  paid
+  overdue
+  void
+}
+
+enum PaymentMethod {
+  stk_push
+  c2b_paybill
+  manual
+}
+
+enum PaymentStatus {
+  pending
+  confirmed
+  failed
+  unmatched
+  refunded
+}
+
+enum CommandType {
+  engine_cut
+  engine_restore
+  reboot
+  request_position
+}
+
+enum CommandChannel {
+  gprs
+  sms_fallback
+}
+
+enum CommandStatus {
+  pending_confirmation
+  blocked_safety
+  queued
+  sent
+  delivered
+  failed
+  cancelled
+  expired
+}
+
+enum AlertType {
+  power_cut
+  jamming
+  overspeed
+  geofence_in
+  geofence_out
+  ignition_on
+  ignition_off
+  low_battery
+  tamper
+  offline
+  restricted_hours
+  sos
+}
+
+enum AlertSeverity {
+  info
+  warning
+  critical
+}
+
+enum AlertStatus {
+  new
+  acknowledged
+  resolved
+}
+
+enum DeliveryChannel {
+  push
+  sms
+  in_app
+}
+
+enum DeliveryStatus {
+  queued
+  sent
+  delivered
+  failed
+}
+
+enum RepaymentStatus {
+  current
+  arrears
+  default
+}
+
+enum ImmobilizationFlag {
+  none
+  flagged
+  confirmed
+  immobilized
+}
+
+enum InstallerJobType {
+  install
+  relay_retrofit
+  repair
+  removal
+  inspection
+}
+
+enum InstallerJobStatus {
+  scheduled
+  in_progress
+  done
+  failed
+}
+
+enum RecoveryLinkStatus {
+  active
+  revoked
+  expired
+}
+
+model User {
+  id                String    @id @default(uuid())
+  phone             String    @unique // 2547XXXXXXXX / 2541XXXXXXXX
+  fullName          String?
+  email             String?
+  locale            String    @default("en") // en | sw
+  status            String    @default("active")
+  consentAcceptedAt DateTime?
+  createdAt         DateTime  @default(now())
+
+  memberships       OrgMember[]
+  vehicles          Vehicle[]      @relation("PersonalVehicles")
+  refreshTokens     RefreshToken[]
+  initiatedCommands Command[]      @relation("CommandInitiator")
+  confirmedCommands Command[]      @relation("CommandConfirmer")
+  deliveries        NotificationDelivery[]
+  installerJobs     InstallerJob[]
+  loansAsBorrower   Loan[]
+  recoveryLinks     RecoveryLink[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Organization {
+  id                   String   @id @default(uuid())
+  name                 String
+  type                 OrgType
+  kraPin               String?
+  immobilizationPolicy Json?    // financier default-flag rules
+  createdAt            DateTime @default(now())
+
+  members   OrgMember[]
+  vehicles  Vehicle[]
+  geofences Geofence[]
+  loans     Loan[]      @relation("FinancierLoans")
+}
+
+model OrgMember {
+  orgId  String
+  userId String
+  role   OrgRole
+
+  org  Organization @relation(fields: [orgId], references: [id])
+  user User         @relation(fields: [userId], references: [id])
+
+  @@id([orgId, userId])
+}
+
+model Vehicle {
+  id          String        @id @default(uuid())
+  orgId       String?
+  ownerUserId String?
+  regPlate    String        @unique
+  type        VehicleType
+  makeModel   String?
+  status      VehicleStatus @default(active)
+  createdAt   DateTime      @default(now())
+
+  org           Organization?  @relation(fields: [orgId], references: [id])
+  owner         User?          @relation("PersonalVehicles", fields: [ownerUserId], references: [id])
+  device        Device?
+  subscriptions Subscription[]
+  commands      Command[]
+  alerts        Alert[]
+  loan          Loan?
+  installerJobs InstallerJob[]
+  recoveryLinks RecoveryLink[]
+  geofences     VehicleGeofence[]
+}
+
+model Device {
+  id              String         @id @default(uuid())
+  imei            String         @unique // 15 digits
+  model           String // GT06N | FMB920 | FMC130 | FMT100 ...
+  protocol        DeviceProtocol
+  traccarDeviceId Int?           @unique
+  simCardId       String?        @unique
+  relayFitted     Boolean        @default(false)
+  status          DeviceStatus   @default(in_stock)
+  firmwareVersion String?
+  vehicleId       String?        @unique
+  createdAt       DateTime       @default(now())
+
+  vehicle  Vehicle?  @relation(fields: [vehicleId], references: [id])
+  simCard  SimCard?  @relation(fields: [simCardId], references: [id])
+  commands Command[]
+}
+
+model SimCard {
+  id              String    @id @default(uuid())
+  iccid           String    @unique
+  msisdn          String    @unique // 2547XXXXXXXX
+  provider        String    @default("safaricom_m2m")
+  apn             String    @default("safaricom")
+  bundleExpiry    DateTime?
+  dataMbMonth     Int?
+  status          SimStatus @default(in_stock)
+  lastDataCheckAt DateTime?
+
+  device Device?
+}
+
+model Subscription {
+  id                 String             @id @default(uuid())
+  vehicleId          String
+  planCode           String // boda_std | car_std | car_premium | fleet | financier
+  status             SubscriptionStatus @default(active)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  renewalPriceKsh    Int
+  autoStkEnabled     Boolean            @default(true)
+
+  vehicle  Vehicle   @relation(fields: [vehicleId], references: [id])
+  invoices Invoice[]
+
+  @@index([vehicleId])
+  @@index([status, currentPeriodEnd])
+}
+
+model Invoice {
+  id             String        @id @default(uuid())
+  subscriptionId String
+  accountRef     String        @unique // PayBill account number
+  amountKsh      Int
+  dueDate        DateTime
+  status         InvoiceStatus @default(pending)
+  createdAt      DateTime      @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  payments     Payment[]
+}
+
+model Payment {
+  id           String        @id @default(uuid())
+  invoiceId    String?
+  method       PaymentMethod
+  mpesaReceipt String?       @unique // e.g. SGH3XK91QT
+  payerPhone   String
+  amountKsh    Int
+  status       PaymentStatus @default(pending)
+  matchedBy    String? // account_ref | phone | manual
+  rawCallback  Json? // full Daraja payload, immutable
+  checkoutRequestId String?  @unique // STK dedup key
+  mpesaTime    DateTime?
+  createdAt    DateTime      @default(now())
+
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@index([payerPhone])
+}
+
+model Command {
+  id               String         @id @default(uuid())
+  vehicleId        String
+  deviceId         String
+  type             CommandType
+  initiatedById    String
+  confirmedById    String?
+  channel          CommandChannel @default(gprs)
+  status           CommandStatus  @default(pending_confirmation)
+  safetyOverride   Boolean        @default(false)
+  reason           String? // mandatory for engine_cut, enforced in service
+  positionSnapshot Json? // speed/lat/lon at decision time
+  createdAt        DateTime       @default(now())
+  confirmedAt      DateTime?
+  deliveredAt      DateTime?
+
+  vehicle     Vehicle @relation(fields: [vehicleId], references: [id])
+  device      Device  @relation(fields: [deviceId], references: [id])
+  initiatedBy User    @relation("CommandInitiator", fields: [initiatedById], references: [id])
+  confirmedBy User?   @relation("CommandConfirmer", fields: [confirmedById], references: [id])
+
+  @@index([vehicleId, createdAt])
+}
+
+model Alert {
+  id               String        @id @default(uuid())
+  vehicleId        String
+  type             AlertType
+  severity         AlertSeverity
+  traccarEventId   BigInt?
+  positionSnapshot Json?
+  dedupKey         String // type:vehicle:bucket
+  repeatCount      Int           @default(1)
+  status           AlertStatus   @default(new)
+  createdAt        DateTime      @default(now())
+
+  vehicle    Vehicle                @relation(fields: [vehicleId], references: [id])
+  deliveries NotificationDelivery[]
+
+  @@unique([dedupKey])
+  @@index([vehicleId, createdAt])
+}
+
+model NotificationDelivery {
+  id        String          @id @default(uuid())
+  alertId   String
+  userId    String
+  channel   DeliveryChannel
+  status    DeliveryStatus  @default(queued)
+  costCents Int?
+  createdAt DateTime        @default(now())
+
+  alert Alert @relation(fields: [alertId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+}
+
+model Geofence {
+  id                String  @id @default(uuid())
+  orgId             String
+  name              String
+  areaWkt           String // CIRCLE or POLYGON, mirrored to Traccar
+  traccarGeofenceId Int?    @unique
+  alertOnEnter      Boolean @default(false)
+  alertOnExit       Boolean @default(false)
+  schedule          Json? // e.g. restricted hours 21:00-05:00 EAT
+
+  org      Organization      @relation(fields: [orgId], references: [id])
+  vehicles VehicleGeofence[]
+}
+
+model VehicleGeofence {
+  vehicleId  String
+  geofenceId String
+
+  vehicle  Vehicle  @relation(fields: [vehicleId], references: [id])
+  geofence Geofence @relation(fields: [geofenceId], references: [id])
+
+  @@id([vehicleId, geofenceId])
+}
+
+model Loan {
+  id                 String             @id @default(uuid())
+  financierOrgId     String
+  vehicleId          String             @unique
+  borrowerUserId     String
+  externalRef        String // loan ID in financier LMS
+  repaymentStatus    RepaymentStatus    @default(current)
+  daysInArrears      Int                @default(0)
+  nextDueDate        DateTime?
+  immobilizationFlag ImmobilizationFlag @default(none)
+  flagUpdatedAt      DateTime?
+
+  financier Organization @relation("FinancierLoans", fields: [financierOrgId], references: [id])
+  vehicle   Vehicle      @relation(fields: [vehicleId], references: [id])
+  borrower  User         @relation(fields: [borrowerUserId], references: [id])
+
+  @@unique([financierOrgId, externalRef])
+}
+
+model InstallerJob {
+  id                 String             @id @default(uuid())
+  vehicleId          String
+  installerUserId    String
+  type               InstallerJobType
+  status             InstallerJobStatus @default(scheduled)
+  scheduledAt        DateTime?
+  completionEvidence Json? // photos, geotag, tested_ok
+  payoutKsh          Int?
+
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+  installer User    @relation(fields: [installerUserId], references: [id])
+}
+
+model RecoveryLink {
+  id          String             @id @default(uuid())
+  vehicleId   String
+  createdById String
+  token       String             @unique
+  expiresAt   DateTime
+  status      RecoveryLinkStatus @default(active)
+  createdAt   DateTime           @default(now())
+
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+  createdBy User    @relation(fields: [createdById], references: [id])
+}

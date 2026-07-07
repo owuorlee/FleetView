@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FleetView — Live map</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="proto-bar"><a href="index.html">← index</a> · <a href="home.html">Home</a> · <a class="here">Map</a> · <a href="immobilize.html">Immobilize</a> · <a href="alerts.html">Alerts</a> · <a href="renew.html">Renew</a> · <a href="financier.html">Financier</a></div>
+
+  <div class="phone">
+    <div class="appbar">
+      <a class="back" href="home.html">←</a>
+      <span class="title">KMFB 421C</span>
+      <span>⛶</span><span style="margin-left:8px">⚙</span>
+    </div>
+
+    <div class="content" style="padding:12px 12px 8px">
+      <div class="map">
+        <div class="road" style="left:0; right:0; top:38%; height:22px"></div>
+        <div class="road" style="top:0; bottom:0; left:58%; width:16px"></div>
+        <div class="road" style="left:0; width:55%; top:70%; height:12px"></div>
+        <div class="trail" style="left:26%; top:26%"></div>
+        <div class="marker" style="left:56%; top:31%"><span>🏍</span></div>
+        <a class="btn ghost small" style="position:absolute; right:10px; bottom:10px">◎</a>
+      </div>
+
+      <div class="statusbar">
+        <span class="chip moving">● Moving</span>
+        <b>34 km/h · NE</b>
+        <span class="spacer"></span>
+        <span>Ignition ON · GSM ▂▄▆ · 8 s</span>
+      </div>
+
+      <div class="row">
+        <a class="btn ghost" style="flex:1" href="#">Trips</a>
+        <a class="btn ghost" style="flex:1" href="#">Geofence</a>
+        <a class="btn danger" style="flex:1" href="immobilize.html">⚡ Engine</a>
+      </div>
+    </div>
+
+    <div class="nav">
+      <a href="home.html"><span class="ic">🏠</span>Home</a>
+      <a class="active" href="map.html"><span class="ic">🗺</span>Map</a>
+      <a href="alerts.html"><span class="ic">🔔</span>Alerts</a>
+      <a href="renew.html"><span class="ic">⋯</span>More</a>
+    </div>
+  </div>
+  <p class="note">Offline-device variant: grey marker + "Last seen 09:14, Kondele" banner + [Alert me when back online].</p>
+</body>
+</html>
