@@ -44,11 +44,18 @@ curl -X POST http://localhost:3000/v1/auth/otp/request -H "Content-Type: applica
 
 - **Billing (spec §7):** subscriptions with plan catalog (`billing-logic.ts`), renewal invoices with ≤12-char PayBill account refs, STK Push via Daraja (`daraja.client.ts` — OAuth token caching, EAT timestamps; **verified against the live sandbox 2026-07-09**), STK callback + C2B confirmation webhooks behind an unguessable secret path, three-tier C2B auto-matching (account ref → plate → phone+amount → unmatched queue), daily renewal scheduler at 09:00 EAT (T-7/T-1/expiry reminders, auto-STK, active→grace→suspended transitions), bilingual receipt/reminder SMS. One-time C2B URL registration: `npm run daraja:register-c2b`; sandbox smoke test: `npx tsx scripts/stk-smoke.ts`.
 
+- **Organizations & RBAC (spec §2.2):** `POST/GET /v1/orgs`, member management by phone; `@RequireOrgRole` + `OrgRoleGuard` enforce a ranked role hierarchy (owner>admin>manager>viewer, with lateral installer/recovery_agent and financier_ops).
+- **Financier module (spec §4.1):** org-scoped console under `/v1/orgs/:orgId/financier` — loan linking, LMS repayment import, portfolio summary (arrears buckets, online %, immobilized count), defaulters queue with per-unit safety verdicts, and the two-step batch immobilization: `batch/flag` creates `pending_confirmation` commands and **never dispatches**, `batch/confirm` re-runs the safety gate per unit and dispatches (blocking moving units). Recovery links: `POST .../recovery-link` mints an expiring token; public `GET /v1/recovery/:token` resolves it to a live position with no auth.
+
 ## Next (build order)
 
-1. Organizations/RBAC beyond personal ownership; financier module (spec §4.1).
-2. Client-facing live stream (`/v1/stream` WebSocket fan-out of positions).
-3. Delivery confirmation for commands (watch position attributes for relay state) and vehicle `status` driven by it.
+1. Client-facing live stream (`/v1/stream` WebSocket fan-out of positions).
+2. Delivery confirmation for commands (watch position attributes for relay state) and vehicle `status` driven by it.
+3. LMS webhooks out (loan.updated, vehicle.immobilized, vehicle.recovered, payment.received).
 4. Callback reachability in dev: ngrok/cloudflared tunnel → set `DARAJA_CALLBACK_BASE_URL`, then test the full STK→callback→receipt loop.
+
+## Test note
+
+`npm test` uses vitest's `forks` pool (set in `vitest.config.ts`) — the default `threads` pool intermittently throws "Timeout calling fetch" on slower Windows machines.
 
 Production notes: move JWT to RS256 keys, OTP store to Redis, and add rate limiting at Nginx per spec §10.

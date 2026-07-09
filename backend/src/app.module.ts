@@ -10,6 +10,8 @@ import { VehiclesModule } from './vehicles/vehicles.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { CommandsModule } from './commands/commands.module';
 import { BillingModule } from './billing/billing.module';
+import { OrgsModule } from './orgs/orgs.module';
+import { FinancierModule } from './financier/financier.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { BillingModule } from './billing/billing.module';
     AlertsModule,
     CommandsModule,
     BillingModule,
+    OrgsModule,
+    FinancierModule,
     HealthModule,
   ],
 })

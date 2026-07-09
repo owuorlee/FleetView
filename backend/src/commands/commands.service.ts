@@ -7,25 +7,17 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { CommandStatus, DeviceProtocol } from '@prisma/client';
+import { CommandStatus } from '@prisma/client';
 import { OtpStore } from '../auth/otp.store';
 import { PrismaService } from '../prisma/prisma.service';
 import { SMS_PROVIDER, SmsProvider } from '../sms/sms.provider';
 import { TraccarClient, TraccarPosition } from '../traccar/traccar.client';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import { evaluateSafety } from './safety-gate';
+import { dispatchCommand, DispatchChannel } from './command-dispatch';
 
 /** A confirmation must arrive within this window or the request expires. */
 export const CONFIRM_WINDOW_MIN = 10;
-/** Fix younger than this ⇒ device considered online ⇒ command goes over GPRS, else SMS fallback. */
-export const ONLINE_FIX_MAX_AGE_MIN = 5;
-
-// Provider-specific SMS command strings (doc 02 §8; Teltonika needs the two-space
-// empty-credentials prefix).
-const SMS_COMMANDS: Record<DeviceProtocol, { cut: string; restore: string }> = {
-  gt06: { cut: 'RELAY,1#', restore: 'RELAY,0#' },
-  teltonika: { cut: '  setdigout 1', restore: '  setdigout 0' },
-};
 
 @Injectable()
 export class CommandsService {
@@ -181,33 +173,16 @@ export class CommandsService {
     }
   }
 
-  private async dispatch(
+  private dispatch(
     device: {
       traccarDeviceId: number | null;
-      protocol: DeviceProtocol;
+      protocol: import('@prisma/client').DeviceProtocol;
       simCard: { msisdn: string } | null;
     },
     action: 'cut' | 'restore',
     position: TraccarPosition | null,
-  ): Promise<'gprs' | 'sms_fallback'> {
-    const fixAgeMin = position
-      ? (Date.now() - new Date(position.fixTime).getTime()) / 60_000
-      : Infinity;
-    const online = device.traccarDeviceId !== null && fixAgeMin <= ONLINE_FIX_MAX_AGE_MIN;
-
-    if (online && this.traccar.enabled) {
-      await this.traccar.sendCommand(
-        device.traccarDeviceId!,
-        action === 'cut' ? 'engineStop' : 'engineResume',
-      );
-      return 'gprs';
-    }
-
-    if (!device.simCard) {
-      throw new ConflictException('Device offline and no SIM registered for SMS fallback');
-    }
-    await this.sms.send(device.simCard.msisdn, SMS_COMMANDS[device.protocol][action]);
-    return 'sms_fallback';
+  ): Promise<DispatchChannel> {
+    return dispatchCommand({ traccar: this.traccar, sms: this.sms }, device, action, position);
   }
 
   private setStatus(commandId: string, status: CommandStatus) {
