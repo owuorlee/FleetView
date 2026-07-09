@@ -42,11 +42,13 @@ curl -X POST http://localhost:3000/v1/auth/otp/request -H "Content-Type: applica
 - **Alerts (spec §6):** Traccar `events$` → rules (`alert-rules.ts`) → dedup buckets (repeat counting on the same `type:vehicle:bucket`) → fan-out: in-app always, SMS for critical types with bilingual EN/SW titles; critical alerts enriched with last-known position. `GET /v1/alerts`, `POST /v1/alerts/:id/ack`.
 - **Commands (spec §5):** two-step immobilization — `POST /v1/vehicles/:id/commands/immobilize` (safety gate: blocked above 10 km/h or stale/no fix; audited even when blocked) → OTP by SMS → `POST /v1/commands/:id/confirm` (10-min window, re-runs the gate, dispatches `engineStop` over GPRS or `RELAY,1#` / `setdigout 1` by SMS fallback when offline). Single-step audited restore. `GET /v1/commands/:id` for the audit trail.
 
+- **Billing (spec §7):** subscriptions with plan catalog (`billing-logic.ts`), renewal invoices with ≤12-char PayBill account refs, STK Push via Daraja (`daraja.client.ts` — OAuth token caching, EAT timestamps; **verified against the live sandbox 2026-07-09**), STK callback + C2B confirmation webhooks behind an unguessable secret path, three-tier C2B auto-matching (account ref → plate → phone+amount → unmatched queue), daily renewal scheduler at 09:00 EAT (T-7/T-1/expiry reminders, auto-STK, active→grace→suspended transitions), bilingual receipt/reminder SMS. One-time C2B URL registration: `npm run daraja:register-c2b`; sandbox smoke test: `npx tsx scripts/stk-smoke.ts`.
+
 ## Next (build order)
 
-1. Billing: subscriptions/invoices, Daraja STK + C2B webhooks (spec §7) — **re-verify Daraja endpoints on the Safaricom portal first**.
-2. Organizations/RBAC beyond personal ownership; financier module (spec §4.1).
-3. Client-facing live stream (`/v1/stream` WebSocket fan-out of positions).
-4. Delivery confirmation for commands (watch position attributes for relay state) and vehicle `status` driven by it.
+1. Organizations/RBAC beyond personal ownership; financier module (spec §4.1).
+2. Client-facing live stream (`/v1/stream` WebSocket fan-out of positions).
+3. Delivery confirmation for commands (watch position attributes for relay state) and vehicle `status` driven by it.
+4. Callback reachability in dev: ngrok/cloudflared tunnel → set `DARAJA_CALLBACK_BASE_URL`, then test the full STK→callback→receipt loop.
 
 Production notes: move JWT to RS256 keys, OTP store to Redis, and add rate limiting at Nginx per spec §10.
