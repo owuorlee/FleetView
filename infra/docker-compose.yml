@@ -21,6 +21,9 @@ services:
 
   traccar:
     image: traccar/traccar:6.14
+    # Traccar doesn't retry its first DB connection; if it loses the cold-start
+    # race with Postgres's init it exits, so let Docker restart it until it wins.
+    restart: on-failure
     depends_on:
       postgres:
         condition: service_healthy
