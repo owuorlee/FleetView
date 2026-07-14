@@ -15,6 +15,11 @@ import { TraccarClient, TraccarPosition } from '../traccar/traccar.client';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import { evaluateSafety } from './safety-gate';
 import { dispatchCommand, DispatchChannel } from './command-dispatch';
+import {
+  DELIVERY_CONFIRM_WINDOW_MIN,
+  expectedRelayState,
+  relayStateFromAttributes,
+} from './command-delivery';
 
 /** A confirmation must arrive within this window or the request expires. */
 export const CONFIRM_WINDOW_MIN = 10;
@@ -161,6 +166,38 @@ export class CommandsService {
     if (!command) throw new NotFoundException('Command not found');
     if (command.vehicle.ownerUserId !== user.id) throw new ForbiddenException();
     return command;
+  }
+
+  /**
+   * Close the audit loop: when a device reports its relay/output state, mark a
+   * recently-sent matching command as `delivered`. Driven by the position stream
+   * (spec §5 — full audit trail with real device feedback). Returns the updated
+   * command, or null if nothing matched.
+   */
+  async confirmDeliveryFromPosition(
+    traccarDeviceId: number,
+    attributes: Record<string, unknown> | undefined,
+  ) {
+    const state = relayStateFromAttributes(attributes);
+    if (!state) return null;
+
+    const device = await this.prisma.device.findUnique({ where: { traccarDeviceId } });
+    if (!device) return null;
+
+    const type = state === 'cut' ? 'engine_cut' : 'engine_restore';
+    const since = new Date(Date.now() - DELIVERY_CONFIRM_WINDOW_MIN * 60_000);
+    const command = await this.prisma.command.findFirst({
+      where: { deviceId: device.id, type, status: 'sent', confirmedAt: { gte: since } },
+      orderBy: { confirmedAt: 'desc' },
+    });
+    if (!command || expectedRelayState(command.type) !== state) return null;
+
+    const updated = await this.prisma.command.update({
+      where: { id: command.id },
+      data: { status: 'delivered', deliveredAt: new Date() },
+    });
+    this.logger.log(`Command ${command.id} (${type}) delivery confirmed by device ${traccarDeviceId}`);
+    return updated;
   }
 
   private async getPosition(traccarDeviceId: number | null): Promise<TraccarPosition | null> {

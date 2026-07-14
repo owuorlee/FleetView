@@ -47,18 +47,20 @@ curl -X POST http://localhost:3000/v1/auth/otp/request -H "Content-Type: applica
 - **Organizations & RBAC (spec §2.2):** `POST/GET /v1/orgs`, member management by phone; `@RequireOrgRole` + `OrgRoleGuard` enforce a ranked role hierarchy (owner>admin>manager>viewer, with lateral installer/recovery_agent and financier_ops).
 - **Financier module (spec §4.1):** org-scoped console under `/v1/orgs/:orgId/financier` — loan linking, LMS repayment import, portfolio summary (arrears buckets, online %, immobilized count), defaulters queue with per-unit safety verdicts, and the two-step batch immobilization: `batch/flag` creates `pending_confirmation` commands and **never dispatches**, `batch/confirm` re-runs the safety gate per unit and dispatches (blocking moving units). Recovery links: `POST .../recovery-link` mints an expiring token; public `GET /v1/recovery/:token` resolves it to a live position with no auth.
 - **Live stream (spec §4.1):** `WS /v1/stream?token=<JWT>` — one upstream Traccar socket fanned out to many app clients, each filtered to the vehicles they own (`stream-filter.ts`). On connect the client gets a `ready` message with its vehicle list, then live `position` and `alert` messages. JWT in the query string (browsers can't set WS headers); bad/missing token → 401. 30 s ping/pong heartbeat drops dead clients.
+- **Command delivery confirmation (spec §5):** `CommandDeliveryWorker` watches the position stream; when a device reports its relay/output state (`command-delivery.ts` reads Traccar's `blocked`, or Teltonika `out1`/`output`), a recently-`sent` matching command (within 30 min) is moved to `delivered` with a timestamp — closing the audit trail with real device feedback rather than optimistic dispatch.
 
 ## Verified end-to-end (local stack, 2026-07-14)
 
 - **Full M-Pesa loop against the live Daraja sandbox + ngrok tunnel:** STK initiation → callback delivered to our webhook (200) → real sandbox returns `1037` (no handset) so payment correctly marked `failed`, invoice stays `pending`; success path proven by the exact Daraja success callback → payment `confirmed`, invoice `paid`, subscription extended a year, bilingual receipt SMS. **C2B PayBill:** confirmation POST matched by **plate alias** → invoice paid, subscription extended; replayed `TransID` deduped (`Duplicate`).
 - **WebSocket stream:** client connected with JWT, received scoped `ready`, then a live position injected into Traccar (OsmAnd) arrived filtered to the owning vehicle (knots→km/h applied).
+- **Command delivery:** a `sent` engine_cut, plus a `blocked=true` position injected into Traccar → the worker matched it and moved the command to `delivered` in Postgres.
 
 ## Next (build order)
 
-1. Delivery confirmation for commands (watch position attributes for relay state) and vehicle `status` driven by it.
-2. LMS webhooks out (loan.updated, vehicle.immobilized, vehicle.recovered, payment.received).
-3. Extend stream fan-out to org members (fleet/financier), not just direct owners.
-4. Move OTP store + STK dedup to Redis; JWT to RS256 (spec §10) before production.
+1. LMS webhooks out (loan.updated, vehicle.immobilized, vehicle.recovered, payment.received).
+2. Extend stream fan-out to org members (fleet/financier), not just direct owners.
+3. Move OTP store + STK dedup to Redis; JWT to RS256 (spec §10) before production.
+4. Begin the Flutter app (M2) against this backend.
 
 ## Test note
 

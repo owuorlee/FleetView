@@ -4,10 +4,11 @@ import { TraccarModule } from '../traccar/traccar.module';
 import { VehiclesModule } from '../vehicles/vehicles.module';
 import { CommandsController } from './commands.controller';
 import { CommandsService } from './commands.service';
+import { CommandDeliveryWorker } from './command-delivery.worker';
 
 @Module({
   imports: [TraccarModule, SmsModule, VehiclesModule],
   controllers: [CommandsController],
-  providers: [CommandsService],
+  providers: [CommandsService, CommandDeliveryWorker],
 })
 export class CommandsModule {}
