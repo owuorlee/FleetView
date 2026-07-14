@@ -12,6 +12,7 @@ import { CommandsModule } from './commands/commands.module';
 import { BillingModule } from './billing/billing.module';
 import { OrgsModule } from './orgs/orgs.module';
 import { FinancierModule } from './financier/financier.module';
+import { StreamModule } from './stream/stream.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { FinancierModule } from './financier/financier.module';
     BillingModule,
     OrgsModule,
     FinancierModule,
+    StreamModule,
     HealthModule,
   ],
 })

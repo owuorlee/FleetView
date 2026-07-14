@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AlertType, Prisma } from '@prisma/client';
+import { Subject } from 'rxjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { SMS_PROVIDER, SmsProvider } from '../sms/sms.provider';
 import { TraccarClient } from '../traccar/traccar.client';
@@ -14,9 +15,20 @@ import { ALERT_TITLES, dedupKey, mapTraccarEvent } from './alert-rules';
 
 export const SMS_DAILY_CAP_PER_VEHICLE = 10;
 
+export interface AlertCreatedEvent {
+  alertId: string;
+  vehicleId: string;
+  type: string;
+  severity: string;
+  positionSnapshot?: unknown;
+}
+
 @Injectable()
 export class AlertsService {
   private readonly logger = new Logger('Alerts');
+
+  /** Live feed of newly created alerts, consumed by the client stream gateway. */
+  readonly created$ = new Subject<AlertCreatedEvent>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -83,6 +95,14 @@ export class AlertsService {
       }
       throw err;
     }
+
+    this.created$.next({
+      alertId: alert.id,
+      vehicleId: vehicle.id,
+      type: rule.type,
+      severity: rule.severity,
+      positionSnapshot: snapshot,
+    });
 
     await this.fanOut(alert.id, rule.type, rule.severity === 'critical', vehicle);
     return alert;
