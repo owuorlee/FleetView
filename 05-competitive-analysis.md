@@ -20,8 +20,11 @@
 | trackntrace.co.ke fleet page | B2B feature list, driver scoring, 100+ reports | ✅ 2026-07-27 |
 | cartrack.co.za consumer + Tag blog + product guide | Consumer features, recovery ops, anti-jamming Tag | ✅ 2026-07-27 |
 | traccar.org/devices | Protocol/port check for adoption feasibility | ✅ 2026-07-27 |
-| Play Store listings & reviews | Weakness mining (see §7) | ❓ not yet pulled |
-| Device manuals / SMS command sheets | Migration feasibility per model | ❓ not yet obtained |
+| Play Store listings + reviews (5 apps, read in-browser) | Feature lists, install base, **real user complaints** (§7) | ✅ 2026-07-27 |
+| Device manuals — iTrack TK102, AT1 backup tracker, FS100 | **SMS command sequences** (§6.1), backup-tracker design | ✅ 2026-07-27 |
+| Competitor YouTube walkthroughs (19 links supplied) | In-app flows | ❓ **not usable — I cannot watch video** (see §10) |
+
+> ⚠️ **Three unrelated companies use the name "iTrack".** Don't conflate them: **itrack.ke** (Kenyan installer/reseller), **iTrack Live / itrackgpstrackers.com** (iTrack Ltd, UK — source of the downloaded manuals), and **iTrack / itrack.top** (SEEWORLD Technology, China — a white-label platform with 500K+ installs). Also note **`Protrack2_man_en.pdf` in the manuals folder is a skydiving altimeter manual** (LB Altimeters, Denmark) — an unrelated name collision, safe to delete.
 
 > **Privacy note:** the screenshots contain a real customer's name, phone, email, IMEI, ICCID and coordinates. None of that personal data is reproduced here — only structural/UX patterns. Keep the raw screenshots out of the public repo if it is ever made public.
 
@@ -198,6 +201,30 @@ What we know:
 
 **The experiment (highest-value next action):** obtain one VT05S and one TK103, point each at our running Traccar (`gt06:5023`, then `xexun:5006`) with the SMS server-change command, and see what decodes. We already have the stack live locally, so this costs one device purchase and an afternoon. The answer determines whether "**switch free, keep your tracker**" is our headline offer or not.
 
+#### ✅ Proof that re-pointing works — TK102-class devices (verified from the manual, 2026-07-27)
+
+The iTrack TK102 manual documents the complete server-change sequence over SMS. Default device password `123456`:
+
+| Step | SMS command | Device replies |
+|---|---|---|
+| Initialise | `begin123456` | `begin ok!` |
+| Set APN | `apn123456 safaricom` | `apn ok` |
+| **Point at our server** | `adminip123456 <OUR-IP> <PORT>` | `adminip ok` |
+| Switch to live mode | `gprs123456` | — |
+
+**Three SMS messages move a competitor's installed tracker onto our platform.** No hardware, no garage visit, no downtime. Additionally, `adminpassword13142324` **resets a changed device password back to the default** — so a dealer having changed the password is not necessarily a blocker (⚠️ use only on a device the customer owns and consents to; this is the customer's own hardware).
+
+Two consequences worth acting on:
+
+1. **`adminip` takes a raw IP address, not a hostname.** For this device family we cannot rely on DNS. **Our production VPS must have a stable public IP that we commit to long-term** — changing it would orphan every migrated device. This upgrades an infrastructure detail into a strategic constraint (doc 02 recommends hostnames for GT06; xexun-family needs the IP pinned too).
+2. The same manual documents **`monitor123456` — a covert listening mode** using the tracker's built-in microphone, which answers calls silently. This capability is baked into cheap commodity trackers already in the Kenyan market. It reinforces §8: we will not expose it, and it is a live consent/DPA issue for the whole category.
+
+#### The AT1 pattern — a cheap answer to GPS jamming (✅ from manual)
+
+Cartrack's anti-jamming moat is an RF Tag needing their own receiver network. The iTrack **AT1** achieves something similar far more cheaply: a battery backup tracker **paired to the main unit over Bluetooth LE**. Every 2 hours it wakes, looks for the primary tracker, and if it finds it, goes back to sleep (preserving battery for years). **If a thief removes or kills the main tracker, the BLE handshake fails and the AT1 wakes up and starts reporting its own GPS every 30 minutes.**
+
+That design is buildable by us with commodity hardware and no proprietary network — a genuine premium-tier differentiator for high-value cars and financier fleets, and a much better answer to jamming/tamper than detection alone. 📋 **Candidate for the Car Premium tier.** ⚠️ Needs a hardware sourcing study.
+
 Blockers to check per competitor: ❓ firmware/config lock, ❓ SMS command password changed from default, ❓ **dealer-owned SIM** (if the SIM is theirs, we swap in our own — cheap, but needs physical access), ❓ contractual lock-in on financed bikes (the financier, not the rider, decides).
 
 ### 6.2 The commercial wedge
@@ -213,9 +240,43 @@ Recruit the same local installers/resellers by offering what their Chinese platf
 
 ---
 
+## 6bis. The app market (Play Store, ✅ 2026-07-27)
+
+| App | Publisher | Installs | Rating | Read |
+|---|---|---|---|---|
+| **Tracker Connect** | Tracker Connect Pty (South Africa) | **1M+** | 4.2 ★ (5.74K) | Mature consumer operator — richest consumer feature set found |
+| **iTrack – GPS Tracking System** (`itrack.top`) | **SEEWORLD Technology** (China) | **500K+** | 4.4 ★ (3.67K) | White-label platform, #8 top-free Auto. Publishes a **public demo login** in the listing |
+| **WhatsGPS** | SEEWORLD Technology | — | 4.5 ★ | Same vendor's second white-label brand |
+| **Fleetr – Vehicle Tracking** | **Loopy Labs (Kenya)** | 10K+ | 4.2 ★ (12) | **Real modern Kenyan competitor** — see below |
+| **iTrack Live** | iTrack Ltd (UK) | 5K+ | — | Adds *Route Repeat*, *Expenses Tracker* |
+
+**Fleetr deserves separate attention.** Unlike the resellers, it is a genuine local software product, shipping fast — its changelog dated **three days before this research** lists: fleet-wide live map with status filters, a fresh home dashboard, journey playback re-centre, a unified notifications hub, grouped profile settings, and a **device connection diagnostic wizard**. That last one is a smart idea we should copy in spirit: a self-service "why is my tracker offline?" flow (our doc 02 §11 checklist, turned into an in-app wizard) deflects the single most common support call. Fleetr is the competitor most likely to move at our speed — the white-label resellers are not.
+
+**Tracker Connect's consumer feature set** (the parity bar for a mature B2C operator): status vocabulary (parked / stationary / driving / over-speeding) · car finder · all-vehicles live map · **share journey in real time with family** · **accident-responder ETA** · tax-compliant trip reports with business/private categorisation and expense logging · odometer + distance this month · **"Car Guard"** (remotely lock the vehicle's position and get a movement alert — i.e. a parked-guard mode) · emergency contacts and medical details · one-tap emergency centre (stolen vehicle, roadside, medical, accident) · licence and service reminders.
+
+Two of those are cheap for us and worth taking: **"Car Guard" / parked-guard mode** (we already have movement + geofence primitives) and **licence/service reminders** (pure scheduling — and in Kenya, NTSA inspection and insurance renewal reminders would land well). The tax-report angle has a Kenyan analogue (KRA business-mileage records) worth testing with fleet buyers. ❓
+
+---
+
 ## 7. Weakness log → our differentiation
 
-Weaknesses inferred from the platform's own design (⚠️) — **to be confirmed with Play Store review mining, still outstanding.**
+Now **evidence-based** — the complaints below are verbatim themes from real reviews of a 1M-install operator (Tracker Connect), ✅ read 2026-07-27.
+
+### Verified user complaints (what customers actually hate)
+
+| Complaint (real reviews) | Signal | Our answer |
+|---|---|---|
+| *"Time-lag for alerts… takes **ten or more minutes** to come through, even when manually refreshing"* — **141 users marked helpful** | **Alert latency is the #1 rated complaint in the market** | ✅ Our NFR is **≤30 s** critical alert delivery (spec §11), push+SMS in parallel, and we measure it |
+| *"my login Password doesn't get recognised and if I try to change it, **I don't get the OTP**, not even after 30 minutes"* | Auth/OTP delivery failure locks people out of their own anti-theft product | ✅ Phone+OTP is our primary path with retry/cooldown; SMS provider is swappable. **Add: OTP delivery monitoring + a fallback channel** 📋 |
+| *"I had tracker installed my wife's car and **that's when everything fell apart**. Now notifications do not work on either vehicle… only via email"* | Multi-vehicle notification regressions | Test matrix must cover multi-vehicle fan-out (our WS stream is already per-vehicle scoped) |
+| *"**Reports** generated from the App **doesn't allow for direct download, only email**, which also doesn't email an actual report, **just a blank page** with logo"* | Report export is broken even where it exists | 📋 Our export gap (§9 #1) — build it properly: direct download, real content |
+| *"real time tracking is very delayed… time to update the trip after ignition off is very very long"* | Trip/report freshness | Our ingest is live; surface "as at" timestamps everywhere |
+| *"I've had to reinstall it frequently, then it still doesn't work"* | App stability | Android-light build, crash reporting from day one |
+| Review sections of the white-label apps are **polluted with stalkerware spam** promoting phone-spying "services" | These platforms sit adjacent to a covert-surveillance ecosystem | Reinforces our §8 stance: **no listen-in mic**, consent-first framing, vehicle-asset protection — not people-tracking |
+
+> The top complaint by a wide margin is **alert latency**, and the second is **being locked out by a failed OTP**. Both are squarely in our control and are already core to our design. This is the sharpest marketing message we have: *alerts in seconds, and a login that works.*
+
+### Structural weaknesses (from platform design)
 
 | Weakness | Evidence | Our answer |
 |---|---|---|
@@ -258,6 +319,10 @@ Weaknesses inferred from the platform's own design (⚠️) — **to be confirme
 | 8 | **POI management** | Template + Carro; also improves our address quality | S |
 | 9 | **"Switch to FleetView" onboarding** + IMEI/plate identifier | The migration wedge in product form | M |
 | 10 | **Dealer/reseller console** | Turns 100+ competitors into our channel | L — strategic decision first |
+| 11 | **Device diagnostic wizard** ("why is my tracker offline?") | Fleetr just shipped one; deflects the #1 support call; we already have the logic in doc 02 §11 | S |
+| 12 | **Parked-guard mode** ("Car Guard") — arm the vehicle, alert on any movement | Tracker Connect consumer staple; we have the primitives | S |
+| 13 | **Licence / service / insurance reminders** | Consumer stickiness; NTSA + insurance renewals are Kenya-relevant | S |
+| 14 | **OTP delivery monitoring + fallback** | Failed OTP is the #2 complaint in verified reviews — it locks people out of their own anti-theft product | S |
 
 **Decisions needed from you:**
 - **Recovery operations** — partner with a security/recovery firm, or stay software-only and let the customer call police? Cartrack's moat is here.
@@ -268,9 +333,21 @@ Weaknesses inferred from the platform's own design (⚠️) — **to be confirme
 
 ## 10. Still to gather
 
-- [ ] **Play Store listings + reviews** for the competitor apps (weakness log is currently inference-only; 1–3★ reviews are the real evidence)
-- [ ] **Device manuals / SMS command sheets** for VT05S, TK103, and whatever the financiers mandate — the migration wedge depends on these
-- [ ] **One VT05S + one TK103 for the protocol experiment** (§6.1) — highest-value single action in this document
+- [x] ~~Play Store listings + reviews~~ ✅ done — see §6bis and §7
+- [x] ~~Device manuals / SMS command sheets~~ ✅ TK102 family done — see §6.1
+- [ ] **One VT05S + one TK103 for the protocol experiment** (§6.1) — **highest-value single action in this document.** TK102-class is proven on paper; VT05S is the model actually in Kenyan accounts and is unlisted by Traccar
 - [ ] What platform the **big motorbike financiers** actually mandate (our volume segment; entirely unverified)
 - [ ] Cartrack Kenya's **actual local pricing** (hidden behind a quote form)
 - [ ] Whether incumbents **lock device firmware/config** — determines migration coverage
+- [ ] **Fleetr** (Loopy Labs) deep-dive — the one local competitor shipping at our pace
+- [ ] Review mining for **Kenyan** apps specifically (Fleetr has only 12 reviews; the verified complaints in §7 are from the South African market and may not transfer exactly)
+
+### On the YouTube links
+
+I **cannot watch video**, so the 19 walkthrough links supplied can't be analysed directly — I'd be inventing detail if I claimed otherwise. Three ways to make them useful, cheapest first:
+
+1. **Screenshot the key moments** (the 3–5 screens per video that show a flow) and drop them in `research/<competitor>/screenshots/` — same as the Protrack captures, which were the single most valuable source so far.
+2. **Paste the transcript** — YouTube's "Show transcript" panel copies as text and I can read that.
+3. **Tell me in a sentence** what each video shows; I'll chase only the ones that cover flows we haven't already mapped.
+
+Honestly, after the Protrack teardown the marginal value is low **except** for anything showing: financier/SACCO portals, installer/dealer workflows, or an actual theft-recovery in progress. Those three we have no coverage of.
