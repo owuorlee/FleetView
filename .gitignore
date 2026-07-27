@@ -1,5 +1,14 @@
 node_modules/
 .claude/settings.local.json
+
+# Competitor research raw captures: these contain a real third party's personal
+# data (name, phone, email, IMEI/ICCID, coordinates). Keep them local only.
+# The analysis in 05-competitive-analysis.md carries the findings, not the PII.
+research/**/screenshots/
+research/**/*.jpeg
+research/**/*.jpg
+research/**/*.png
+research/**/*.pdf
 dist/
 .env
 *.log
