@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FleetView — Financier ops console</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { background: var(--petrol-900); color: #e2eaf1; }
+
+  .shell { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+  @media (max-width: 900px) { .shell { grid-template-columns: 1fr; } .side { display: none; } }
+
+  /* ---- rail ---- */
+  .side {
+    background: var(--petrol-850); border-right: 1px solid var(--petrol-700);
+    padding: 1.15rem 0; display: flex; flex-direction: column; gap: .25rem;
+  }
+  .side__brand {
+    font-family: var(--font-display); font-weight: 800; font-size: 1.35rem;
+    color: #fff; text-transform: uppercase; padding: 0 1.2rem 1.1rem;
+  }
+  .side__brand em { color: var(--sodium-500); font-style: normal; }
+  .side__org {
+    margin: 0 1.2rem 1.2rem; padding: .7rem .8rem; border-radius: var(--r-md);
+    background: var(--petrol-800); border: 1px solid var(--petrol-700);
+  }
+  .side__org b { display: block; font-size: var(--t-sm); color: #fff; }
+  .side a {
+    display: flex; align-items: center; gap: .7rem; padding: .65rem 1.2rem;
+    color: #a9b8c6; text-decoration: none; font-size: var(--t-sm); font-weight: 500;
+    border-left: 3px solid transparent;
+  }
+  .side a:hover { color: #fff; background: rgba(255,255,255,.03); }
+  .side a[aria-current] {
+    color: #fff; border-left-color: var(--sodium-500);
+    background: linear-gradient(90deg, rgba(242,160,61,.14), transparent 70%);
+  }
+  .side svg { width: 17px; height: 17px; flex: none; }
+
+  /* ---- main ---- */
+  .main { padding: 1.6rem clamp(1rem, 2.6vw, 2.2rem) 3rem; min-width: 0; }
+  .topline { display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .topline h1 { color: #fff; font-size: 2.2rem; }
+  .who { margin-left: auto; text-align: right; font-size: var(--t-sm); color: #93a3b2; }
+  .who b { color: #fff; display: block; }
+
+  /* ---- KPI ---- */
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: .9rem; margin-bottom: 1.6rem; }
+  @media (max-width: 1080px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  .kpi { padding: 1rem 1.1rem; }
+  .kpi__n {
+    font-family: var(--font-display); font-size: 2.3rem; line-height: 1; color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi__l { color: #8fa0b0; font-size: var(--t-xs); text-transform: uppercase;
+            letter-spacing: .09em; font-family: var(--font-mono); margin-top: .45rem; }
+  .kpi--warn .kpi__n { color: var(--hazard); }
+  .kpi--bad  .kpi__n { color: var(--alarm-dark); }
+  .kpi--good .kpi__n { color: var(--live-dark); }
+
+  /* ---- table ---- */
+  .panel { border-radius: var(--r-lg); border: 1px solid var(--petrol-700); overflow: hidden; }
+  .panel__hd {
+    display: flex; align-items: center; gap: .8rem; flex-wrap: wrap;
+    padding: .9rem 1.1rem; background: var(--petrol-850);
+    border-bottom: 1px solid var(--petrol-700);
+  }
+  .panel__hd h2 { font-size: 1.3rem; color: #fff; }
+  .policy {
+    font-family: var(--font-mono); font-size: var(--t-xs); color: #8fa0b0;
+    padding: .25rem .55rem; border: 1px solid var(--petrol-600); border-radius: var(--r-sm);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
+  thead th {
+    text-align: left; padding: .6rem 1.1rem; background: var(--petrol-800);
+    font-family: var(--font-mono); font-size: var(--t-xs); font-weight: 500;
+    letter-spacing: .08em; text-transform: uppercase; color: #8fa0b0;
+    border-bottom: 1px solid var(--petrol-700);
+  }
+  tbody td { padding: .8rem 1.1rem; border-bottom: 1px solid var(--petrol-750); background: var(--petrol-800); vertical-align: middle; }
+  tbody tr:hover td { background: var(--petrol-750); }
+  tbody tr[data-sel] td { background: #2a2417; }
+  tbody tr[data-blocked] td { opacity: .55; }
+  .arrears { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; }
+  .arrears--bad { color: var(--alarm-dark); }
+  .arrears--warn { color: var(--hazard); }
+  .borrower { color: #cbd6e1; }
+  .borrower span { display: block; color: #8093a3; font-size: var(--t-xs); }
+  input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--sodium-500); }
+
+  .bar {
+    display: flex; align-items: center; gap: .8rem; flex-wrap: wrap;
+    padding: .85rem 1.1rem; background: var(--petrol-850); border-top: 1px solid var(--petrol-700);
+  }
+
+  /* ---- the confirm sheet: a person, not a row id ---- */
+  .confirm {
+    margin-top: 1.6rem; border-radius: var(--r-lg); overflow: hidden;
+    border: 1px solid #6b2b2b;
+    box-shadow: 0 30px 60px -34px rgba(0,0,0,.95);
+  }
+  .confirm__hd {
+    background: linear-gradient(180deg, #4a1d1d, #3a1717);
+    padding: 1rem 1.2rem; display: flex; align-items: center; gap: .75rem;
+    border-bottom: 1px solid #6b2b2b;
+  }
+  .confirm__hd h3 { color: #ffdede; font-size: 1.4rem; }
+  .confirm__body { background: var(--petrol-800); padding: 1.2rem; display: grid; gap: 1rem; }
+  .unit {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; align-items: center;
+    padding: .85rem 1rem; border-radius: var(--r-md);
+    background: var(--petrol-850); border: 1px solid var(--petrol-700);
+  }
+  .unit--blocked { border-color: #6b4a2b; background: #2a2417; }
+  .unit__who b { color: #fff; }
+  .unit__who span { display: block; color: #93a3b2; font-size: var(--t-xs); margin-top: .15rem; }
+  .reasonbox {
+    width: 100%; padding: .8rem; border-radius: var(--r-md); min-height: 76px;
+    background: var(--petrol-900); border: 1px solid var(--petrol-600);
+    color: #e2eaf1; font: inherit; resize: vertical;
+  }
+  .confirm__foot {
+    display: flex; gap: .8rem; align-items: center; flex-wrap: wrap;
+    padding: 1rem 1.2rem; background: var(--petrol-850); border-top: 1px solid var(--petrol-700);
+  }
+  .note { color: #93a3b2; font-size: var(--t-xs); max-width: 52ch; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ============ RAIL ============ -->
+  <aside class="side">
+    <div class="side__brand">Fleet<em>View</em></div>
+    <div class="side__org">
+      <span class="eyebrow" style="font-size:10px">Organisation</span>
+      <b>Boda Capital Ltd</b>
+      <span class="tiny muted">Financier · 1,284 units</span>
+    </div>
+    <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>Portfolio</a>
+    <a href="#" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Defaulters</a>
+    <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Recoveries</a>
+    <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 9v11"/></svg>Reports</a>
+    <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>Loan sync</a>
+    <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Audit log</a>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main surface-room" style="background-image:radial-gradient(70% 40% at 85% -10%, rgba(242,160,61,.10), transparent 70%)">
+
+    <div class="topline">
+      <div>
+        <p class="eyebrow">Collections</p>
+        <h1 style="margin-top:.4rem">Defaulters queue</h1>
+      </div>
+      <div class="who">
+        <b>Kiprop Cherono</b>
+        financier_ops · signed in 08:12
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="card kpi"><div class="kpi__n">1,284</div><div class="kpi__l">Units tracked</div></div>
+      <div class="card kpi kpi--good"><div class="kpi__n">97.6%</div><div class="kpi__l">Online 24h</div></div>
+      <div class="card kpi kpi--warn"><div class="kpi__n">61</div><div class="kpi__l">Arrears 8–30d</div></div>
+      <div class="card kpi kpi--bad"><div class="kpi__n">17</div><div class="kpi__l">Default 30d+</div></div>
+      <div class="card kpi"><div class="kpi__n">9</div><div class="kpi__l">Immobilised</div></div>
+    </div>
+
+    <!-- Queue -->
+    <section class="panel">
+      <div class="panel__hd">
+        <h2>Flagged for review</h2>
+        <span class="policy">policy v3 · arrears ≥ 14 days</span>
+        <div style="margin-left:auto" class="row gap-1">
+          <button class="btn btn--ghost" style="min-height:38px;font-size:var(--t-sm)">Import CSV</button>
+          <button class="btn btn--ghost" style="min-height:38px;font-size:var(--t-sm)">Export</button>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:38px"><input type="checkbox" checked aria-label="Select all"></th>
+            <th>Unit</th>
+            <th>Borrower</th>
+            <th>Loan ref</th>
+            <th>Arrears</th>
+            <th>Last position</th>
+            <th>Safety check</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-sel>
+            <td><input type="checkbox" checked aria-label="Select KMFB 421C"></td>
+            <td><span class="plate plate--sm" data-status="parked"><span class="plate__strip"></span><span class="plate__text">KMFB 421C</span></span></td>
+            <td class="borrower">J. Otieno<span>0722 •• 4180</span></td>
+            <td class="mono tiny">BC-2024-8841</td>
+            <td class="arrears arrears--bad">21 d</td>
+            <td>Kondele, Kisumu <span class="muted tiny">· 2 min ago</span></td>
+            <td><span class="status status--live"><span class="status__dot"></span>Stationary 34 min</span></td>
+          </tr>
+          <tr data-sel>
+            <td><input type="checkbox" checked aria-label="Select KMEZ 108B"></td>
+            <td><span class="plate plate--sm" data-status="parked"><span class="plate__strip"></span><span class="plate__text">KMEZ 108B</span></span></td>
+            <td class="borrower">A. Wanjiru<span>0733 •• 9021</span></td>
+            <td class="mono tiny">BC-2025-0113</td>
+            <td class="arrears arrears--bad">18 d</td>
+            <td>Kawangware <span class="muted tiny">· 7 min ago</span></td>
+            <td><span class="status status--live"><span class="status__dot"></span>Stationary 12 min</span></td>
+          </tr>
+          <tr data-blocked>
+            <td><input type="checkbox" disabled aria-label="KMDL 764F blocked"></td>
+            <td><span class="plate plate--sm" data-status="live"><span class="plate__strip"></span><span class="plate__text">KMDL 764F</span></span></td>
+            <td class="borrower">S. Mutiso<span>0710 •• 3355</span></td>
+            <td class="mono tiny">BC-2024-7702</td>
+            <td class="arrears arrears--warn">15 d</td>
+            <td>Thika Road <span class="muted tiny">· moving</span></td>
+            <td><span class="status status--alarm"><span class="status__dot"></span>Moving 46 km/h — blocked</span></td>
+          </tr>
+          <tr data-blocked>
+            <td><input type="checkbox" disabled aria-label="KMCA 330J offline"></td>
+            <td><span class="plate plate--sm" data-status="offline"><span class="plate__strip"></span><span class="plate__text">KMCA 330J</span></span></td>
+            <td class="borrower">P. Kimani<span>0705 •• 7744</span></td>
+            <td class="mono tiny">BC-2023-4419</td>
+            <td class="arrears arrears--bad">44 d</td>
+            <td>Gikomba <span class="muted tiny">· 3 days ago</span></td>
+            <td><span class="status status--offline"><span class="status__dot"></span>Offline — SMS path</span></td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+
+      <div class="bar">
+        <span class="sm"><b style="color:#fff">2</b> of 4 selected · <span class="muted">2 blocked by safety check</span></span>
+        <div style="margin-left:auto" class="row gap-1">
+          <button class="btn btn--ghost" style="min-height:40px">Notify when stopped</button>
+          <button class="btn btn--danger" style="min-height:40px">Review 2 for immobilisation</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CONFIRM SHEET ============ -->
+    <section class="confirm">
+      <div class="confirm__hd">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffb0b0" stroke-width="2.4"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        <h3>Confirm engine cut — 2 units</h3>
+        <span style="margin-left:auto;font-size:var(--t-xs)" class="mono muted">step 2 of 2</span>
+      </div>
+
+      <div class="confirm__body">
+        <p class="note" style="max-width:66ch">
+          Safety is re-checked at the moment you confirm, not when you flagged. Each rider is
+          notified by SMS in their language, and every action is written to the audit log against
+          your name.
+        </p>
+
+        <div class="unit">
+          <span class="plate plate--sm" data-status="parked"><span class="plate__strip"></span><span class="plate__text">KMFB 421C</span></span>
+          <div class="unit__who">
+            <b>J. Otieno</b>
+            <span>Kondele, Kisumu · stationary 34 min · 21 days in arrears</span>
+          </div>
+          <span class="status status--live"><span class="status__dot"></span>Will cut</span>
+        </div>
+
+        <div class="unit">
+          <span class="plate plate--sm" data-status="parked"><span class="plate__strip"></span><span class="plate__text">KMEZ 108B</span></span>
+          <div class="unit__who">
+            <b>A. Wanjiru</b>
+            <span>Kawangware · stationary 12 min · 18 days in arrears</span>
+          </div>
+          <span class="status status--live"><span class="status__dot"></span>Will cut</span>
+        </div>
+
+        <div class="unit unit--blocked">
+          <span class="plate plate--sm" data-status="live"><span class="plate__strip"></span><span class="plate__text">KMDL 764F</span></span>
+          <div class="unit__who">
+            <b>S. Mutiso</b>
+            <span>Thika Road · moving 46 km/h — excluded from this batch</span>
+          </div>
+          <span class="status status--alarm"><span class="status__dot"></span>Blocked</span>
+        </div>
+
+        <div>
+          <label class="eyebrow" for="reason" style="display:block;margin-bottom:.4rem">Reason — recorded in the audit log</label>
+          <textarea class="reasonbox" id="reason" placeholder="e.g. Default day 21, collections call unanswered on 24 and 26 July.">Default day 21 — collections calls unanswered 24 &amp; 26 July. Approved by credit committee.</textarea>
+        </div>
+      </div>
+
+      <div class="confirm__foot">
+        <p class="note">
+          Restoring is instant and free once payment lands. Riders can always call the theft line.
+        </p>
+        <div style="margin-left:auto" class="row gap-1">
+          <button class="btn btn--ghost" style="min-height:44px">Cancel</button>
+          <button class="btn btn--danger" style="min-height:44px">Confirm &amp; cut 2 engines</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+</body>
+</html>

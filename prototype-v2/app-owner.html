@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FleetView — Rider &amp; Owner app</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { background: #101820; color: #dfe7ee; padding: 2.2rem 1.2rem 4rem; }
+  .head { width: min(1240px,94vw); margin: 0 auto 2rem; }
+  .head h1 { color: #fff; font-size: 2.4rem; }
+  .head p { color: #93a3b2; max-width: 62ch; margin-top: .7rem; }
+  .back { color: var(--sodium-500); text-decoration: none; font-size: var(--t-sm); font-weight: 600; }
+
+  .strip {
+    width: min(1240px,94vw); margin: 0 auto;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem; align-items: start;
+  }
+  .screen__label { margin-bottom: .8rem; }
+  .screen__label b { color: #fff; font-weight: 600; display: block; font-size: var(--t-md); }
+  .screen__label span { color: #8b9aa8; font-size: var(--t-sm); }
+
+  /* phone shell — cheap Android proportions */
+  .phone {
+    width: 340px; height: 720px; margin-inline: auto;
+    border-radius: 30px; border: 8px solid #05090d;
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,.9), 0 0 0 1px #2a3644;
+    overflow: hidden; display: flex; flex-direction: column;
+    position: relative;
+  }
+  .statusbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: .45rem .95rem; font-size: 11px; font-weight: 600;
+    background: rgba(0,0,0,.06);
+  }
+  .appbar {
+    display: flex; align-items: center; gap: .7rem;
+    padding: .75rem .95rem; border-bottom: 1px solid rgba(16,20,24,.09);
+  }
+  .appbar__title { font-family: var(--font-display); font-size: 1.5rem; letter-spacing:.02em; }
+  .appbar__title em { color: var(--sodium-600); font-style: normal; }
+  .body { flex: 1; overflow: hidden; padding: .95rem; display: flex; flex-direction: column; gap: .8rem; }
+
+  /* vehicle row — the plate is the identity */
+  .veh {
+    background: var(--paper); border: 1px solid rgba(16,20,24,.1);
+    border-radius: var(--r-lg); padding: .95rem;
+    box-shadow: 0 1px 2px rgba(16,20,24,.05), 0 8px 20px -16px rgba(16,20,24,.4);
+    display: grid; gap: .7rem;
+  }
+  .veh__top { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+  .veh__where { font-weight: 600; font-size: var(--t-md); line-height: 1.25; }
+  .veh__meta { color: var(--slate); font-size: var(--t-sm); display: flex; gap: .5rem; align-items: center; }
+  .veh__acts { display: flex; gap: .5rem; }
+  .veh__acts .btn { flex: 1; min-height: 46px; font-size: var(--t-sm); }
+
+  .banner {
+    display: flex; align-items: center; gap: .7rem;
+    background: #fff6e6; border: 1px solid #f0d9ab; border-left: 3px solid var(--sodium-500);
+    border-radius: var(--r-md); padding: .8rem .9rem; font-size: var(--t-sm);
+  }
+  .banner b { display: block; font-size: var(--t-base); }
+
+  /* bottom nav */
+  .tabs {
+    display: grid; grid-template-columns: repeat(4,1fr);
+    border-top: 1px solid rgba(16,20,24,.1); background: var(--paper);
+  }
+  .tab {
+    display: grid; justify-items: center; gap: .2rem; padding: .55rem 0 .7rem;
+    color: var(--slate); font-size: 11px; font-weight: 600; text-decoration: none;
+  }
+  .tab[aria-current] { color: var(--sodium-600); }
+  .tab svg { width: 21px; height: 21px; }
+
+  /* live map screen */
+  .livewrap { position: relative; flex: 1; border-radius: var(--r-md); overflow: hidden; }
+  .refresh {
+    position: absolute; top: .6rem; left: .6rem; z-index: 3;
+    background: rgba(255,255,255,.94); border: 1px solid rgba(16,20,24,.12);
+    border-radius: 999px; padding: .3rem .65rem; font-size: 11px; font-weight: 600;
+    display: flex; align-items: center; gap: .35rem;
+  }
+  .telemetry {
+    background: var(--ink); color: #fff; border-radius: var(--r-md);
+    padding: .8rem .9rem; display: grid; gap: .55rem;
+  }
+  .telemetry__row { display: flex; justify-content: space-between; align-items: baseline; }
+  .telemetry__big { font-family: var(--font-display); font-size: 2.1rem; line-height: 1; }
+  .telemetry__k { color: #93a3b2; font-size: var(--t-xs); text-transform: uppercase; letter-spacing: .1em; font-family: var(--font-mono); }
+
+  /* immobilize */
+  .danger-head { background: var(--alarm); color: #fff; padding: .9rem .95rem; }
+  .danger-head h2 { font-size: 1.6rem; }
+  .verdict {
+    border-radius: var(--r-md); padding: .8rem .9rem; font-weight: 600;
+    background: #e7f4ed; color: #14663f; border: 1px solid #b6ddc8;
+    display: flex; gap: .6rem; align-items: center; font-size: var(--t-sm);
+  }
+  .field { display: grid; gap: .35rem; }
+  .field label { font-size: var(--t-xs); text-transform: uppercase; letter-spacing: .09em; color: var(--slate); font-family: var(--font-mono); }
+  .field select, .field input {
+    width: 100%; padding: .8rem .75rem; border-radius: var(--r-md);
+    border: 1px solid rgba(16,20,24,.22); font: inherit; background: var(--paper);
+    min-height: 50px;
+  }
+  .pinboxes { display: flex; gap: .55rem; }
+  .pinbox {
+    flex: 1; height: 58px; border: 2px solid rgba(16,20,24,.18); border-radius: var(--r-md);
+    display: grid; place-items: center; font-size: 1.5rem; font-family: var(--font-mono);
+    background: var(--paper);
+  }
+  .pinbox[data-filled] { border-color: var(--ink); }
+  .slide {
+    background: var(--alarm); color: #fff; border-radius: 999px;
+    padding: 1.05rem; text-align: center; font-weight: 700; letter-spacing: .06em;
+    font-size: var(--t-sm); text-transform: uppercase;
+    box-shadow: 0 10px 24px -12px rgba(211,58,58,.9);
+    display: flex; align-items: center; justify-content: center; gap: .6rem;
+  }
+
+  /* alerts */
+  .alert-item {
+    display: grid; grid-template-columns: 34px 1fr; gap: .75rem;
+    padding: .85rem; border-radius: var(--r-md); background: var(--paper);
+    border: 1px solid rgba(16,20,24,.1);
+  }
+  .alert-item--crit { border-color: #f0c2c2; background: #fff7f7; border-left: 3px solid var(--alarm); }
+  .alert-ico {
+    width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+    background: var(--plate-dim); color: var(--ink-2);
+  }
+  .alert-item--crit .alert-ico { background: #fbe3e3; color: var(--alarm); }
+  .alert-item h4 { font-family: var(--font-body); font-weight: 600; font-size: var(--t-base); text-transform: none; letter-spacing: 0; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <a href="index.html" class="back">&larr; All screens</a>
+  <h1 style="margin-top:.6rem">Rider &amp; Owner app</h1>
+  <p>
+    Light surface for sun and dust. One question answered per screen. Plate blocks carry identity
+    and status, so a glance is enough. Touch targets 46–52px for real thumbs on cracked screens.
+    The engine-cut action is deliberately <em>not</em> on the home screen.
+  </p>
+</div>
+
+<div class="strip">
+
+  <!-- ================= HOME ================= -->
+  <div>
+    <div class="screen__label"><b>Home</b><span>“Is it where it should be?” — answered in under a second</span></div>
+    <div class="phone surface-field">
+      <div class="statusbar"><span class="mono">09:41</span><span class="mono">4G ▮▮▮ 62%</span></div>
+      <div class="appbar">
+        <span class="appbar__title">Fleet<em>View</em></span>
+        <span style="margin-left:auto" class="status status--live"><span class="status__dot pulse"></span>Live</span>
+      </div>
+      <div class="body">
+
+        <div class="banner rise" style="--i:0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--sodium-600)" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <div>
+            <b>Renewal due in 3 days</b>
+            <span class="muted">KDA 123A · KSh 3,000</span>
+          </div>
+          <a href="#" class="btn btn--primary" style="min-height:40px;padding:.5em .9em;margin-left:auto">Lipa</a>
+        </div>
+
+        <article class="veh rise" style="--i:1">
+          <div class="veh__top">
+            <span class="plate" data-status="live"><span class="plate__strip"></span><span class="plate__text">KMFB 421C</span></span>
+            <span class="status status--live"><span class="status__dot"></span>Moving</span>
+          </div>
+          <div>
+            <p class="veh__where">Tom Mboya Street, Kisumu</p>
+            <p class="veh__meta"><b class="num" style="color:var(--ink)">34 km/h</b> · updated 8s ago</p>
+          </div>
+          <div class="veh__acts">
+            <a href="#" class="btn btn--ghost">Map</a>
+            <a href="#" class="btn btn--ghost">Trips</a>
+          </div>
+        </article>
+
+        <article class="veh rise" style="--i:2">
+          <div class="veh__top">
+            <span class="plate" data-status="parked"><span class="plate__strip"></span><span class="plate__text">KDA 123A</span></span>
+            <span class="status status--parked"><span class="status__dot"></span>Parked</span>
+          </div>
+          <div>
+            <p class="veh__where">Home · Ngumba Estate</p>
+            <p class="veh__meta">2 h 14 min · battery <b class="num" style="color:var(--ink)">12.4 V</b></p>
+          </div>
+        </article>
+      </div>
+
+      <nav class="tabs">
+        <a class="tab" aria-current="page" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Home</a>
+        <a class="tab" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3z"/><path d="M9 3v15M15 6v15"/></svg>Map</a>
+        <a class="tab" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></svg>Alerts</a>
+        <a class="tab" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>More</a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- ================= LIVE ================= -->
+  <div>
+    <div class="screen__label"><b>Live map</b><span>Visible refresh countdown — the trust signal switchers expect</span></div>
+    <div class="phone surface-field">
+      <div class="statusbar"><span class="mono">09:41</span><span class="mono">4G ▮▮▮ 62%</span></div>
+      <div class="appbar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg>
+        <span class="plate plate--sm" data-status="live"><span class="plate__strip"></span><span class="plate__text">KMFB 421C</span></span>
+      </div>
+      <div class="body">
+        <div class="livewrap map">
+          <div class="map__road map__road--major" style="left:-10%;right:-10%;top:38%;height:12px;transform:rotate(-8deg)"></div>
+          <div class="map__road" style="left:30%;top:0;bottom:0;width:7px"></div>
+          <div class="map__road" style="left:-5%;right:40%;top:72%;height:6px"></div>
+          <div class="map__trail" style="left:34%;top:32%;width:90px;height:60px"></div>
+          <div class="map__marker" style="left:58%;top:52%">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11v6a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H8v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/></svg>
+          </div>
+          <div class="refresh">
+            <span class="status__dot" style="background:var(--live);width:7px;height:7px;border-radius:50%"></span>
+            Live · refresh <span class="mono">10s</span>
+          </div>
+        </div>
+
+        <div class="telemetry">
+          <div class="telemetry__row">
+            <div>
+              <p class="telemetry__k">Speed</p>
+              <p class="telemetry__big num">34<span style="font-size:1rem;font-family:var(--font-body)"> km/h</span></p>
+            </div>
+            <div style="text-align:right">
+              <p class="telemetry__k">Heading</p>
+              <p class="telemetry__big">NE</p>
+            </div>
+          </div>
+          <hr class="divider" style="background:rgba(255,255,255,.14)">
+          <div class="telemetry__row sm">
+            <span class="muted" style="color:#93a3b2">Ignition <b style="color:#fff">ON</b></span>
+            <span class="muted" style="color:#93a3b2">Fix <b class="num" style="color:#fff">8s</b> ago</span>
+          </div>
+        </div>
+
+        <div class="veh__acts">
+          <a href="#" class="btn btn--ghost" style="flex:1">Trips</a>
+          <a href="#" class="btn btn--ghost" style="flex:1">Zones</a>
+          <a href="#" class="btn btn--danger" style="flex:1">Engine</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= IMMOBILIZE ================= -->
+  <div>
+    <div class="screen__label"><b>Cut engine — step 2 of 2</b><span>Safety verdict first; consequence never hidden behind a soft colour</span></div>
+    <div class="phone surface-field">
+      <div class="statusbar"><span class="mono">09:42</span><span class="mono">4G ▮▮▮ 62%</span></div>
+      <div class="danger-head">
+        <div class="row gap-1">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+          <h2>Cut engine?</h2>
+        </div>
+      </div>
+      <div class="body">
+        <div class="row gap-2" style="justify-content:space-between">
+          <span class="plate plate--sm" data-status="parked"><span class="plate__strip"></span><span class="plate__text">KMFB 421C</span></span>
+          <span class="sm muted">Kondele, Kisumu</span>
+        </div>
+
+        <div class="verdict">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+          Safety check passed — stationary 12 min
+        </div>
+
+        <div class="field">
+          <label for="why">Reason (required)</label>
+          <select id="why"><option>Theft suspected</option><option>Unauthorised use</option><option>Recovery in progress</option></select>
+        </div>
+
+        <div class="field">
+          <label>Enter your app PIN</label>
+          <div class="pinboxes">
+            <div class="pinbox" data-filled>•</div><div class="pinbox" data-filled>•</div>
+            <div class="pinbox" data-filled>•</div><div class="pinbox">&nbsp;</div>
+          </div>
+        </div>
+
+        <div style="margin-top:auto;display:grid;gap:.7rem">
+          <div class="slide">
+            Slide to cut engine
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><path d="m9 6 6 6-6 6"/></svg>
+          </div>
+          <p class="tiny muted" style="text-align:center">
+            Blocked automatically above 10 km/h. Logged with your name, time and position.
+          </p>
+          <a href="#" class="btn btn--ghost btn--block">Cancel</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SWAHILI / ALERTS ================= -->
+  <div>
+    <div class="screen__label"><b>Arifa (Kiswahili)</b><span>Swahili is a first-class default for the boda variant, not a buried toggle</span></div>
+    <div class="phone surface-field">
+      <div class="statusbar"><span class="mono">02:14</span><span class="mono">3G ▮▮ 41%</span></div>
+      <div class="appbar">
+        <span class="appbar__title">Arifa</span>
+        <span style="margin-left:auto;font-size:var(--t-sm);font-weight:600;color:var(--sodium-600)">SW</span>
+      </div>
+      <div class="body">
+        <div class="alert-item alert-item--crit rise" style="--i:0">
+          <span class="alert-ico">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 2v9"/><path d="M18.4 6.6a9 9 0 1 1-12.8.04"/></svg>
+          </span>
+          <div>
+            <h4>Umeme umekatwa!</h4>
+            <p class="sm muted">KMFB 421C · Ilionekana mwisho: Kondele, 02:14</p>
+            <div class="row gap-1" style="margin-top:.6rem">
+              <a href="#" class="btn btn--danger" style="min-height:40px;font-size:var(--t-sm)">Angalia sasa</a>
+              <a href="#" class="btn btn--ghost" style="min-height:40px;font-size:var(--t-sm)">Thibitisha</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert-item rise" style="--i:1">
+          <span class="alert-ico">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12h16"/><path d="m14 6 6 6-6 6"/></svg>
+          </span>
+          <div>
+            <h4>Mwendo kasi: 94 km/h</h4>
+            <p class="sm muted">KMFB 421C · Barabara ya Kisumu–Kakamega · 09:31</p>
+          </div>
+        </div>
+
+        <div class="alert-item rise" style="--i:2">
+          <span class="alert-ico">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </span>
+          <div>
+            <h4>Injini imewashwa nje ya saa</h4>
+            <p class="sm muted">KDA 123A · Mipaka ya nyumbani · 05:12</p>
+          </div>
+        </div>
+
+        <div class="banner" style="margin-top:auto;background:var(--plate-dim);border-color:rgba(16,20,24,.12);border-left-color:var(--slate)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--slate)" stroke-width="2.2"><path d="M3 3l18 18M10.7 5.1A9 9 0 0 1 21 12M2.5 10a9 9 0 0 1 3-2.6"/></svg>
+          <span class="sm">Hakuna mtandao — inaonyesha data ya mwisho (02:14)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

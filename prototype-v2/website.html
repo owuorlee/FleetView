@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FleetView — vehicle tracking that answers in seconds</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { background: var(--petrol-900); }
+
+  /* ---------- shell ---------- */
+  .wrap { width: min(1180px, 92vw); margin-inline: auto; }
+  section { position: relative; }
+
+  /* ---------- nav ---------- */
+  .nav {
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: blur(10px);
+    background: rgba(15, 23, 32, 0.82);
+    border-bottom: 1px solid var(--petrol-700);
+  }
+  .nav__inner { display: flex; align-items: center; gap: 2rem; padding: 0.9rem 0; }
+  .brand {
+    font-family: var(--font-display); font-weight: 800;
+    font-size: 1.5rem; letter-spacing: 0.02em; color: #fff;
+    text-transform: uppercase; text-decoration: none;
+  }
+  .brand em { color: var(--sodium-500); font-style: normal; }
+  .nav__links { display: flex; gap: 1.6rem; margin-left: auto; align-items: center; }
+  .nav__links a {
+    color: #c3cedb; text-decoration: none; font-size: var(--t-sm); font-weight: 500;
+  }
+  .nav__links a:hover { color: #fff; }
+  @media (max-width: 780px) { .nav__links a:not(.btn) { display: none; } }
+
+  /* ---------- hero: asymmetric, plate breaks the grid ---------- */
+  .hero { padding: clamp(3.5rem, 9vw, 7rem) 0 clamp(4rem, 10vw, 8rem); overflow: hidden; }
+  .hero__grid {
+    display: grid; grid-template-columns: 1.05fr 0.95fr;
+    gap: clamp(2rem, 5vw, 4.5rem); align-items: center;
+  }
+  @media (max-width: 900px) { .hero__grid { grid-template-columns: 1fr; } }
+
+  .hero h1 {
+    font-size: clamp(2.9rem, 7.2vw, 5.4rem);
+    color: #fff; letter-spacing: 0.005em;
+    text-wrap: balance;
+  }
+  .hero h1 span { color: var(--sodium-500); display: block; }
+  .hero__lede {
+    margin-top: 1.4rem; font-size: var(--t-md); color: #b9c6d3;
+    max-width: 46ch; line-height: 1.6;
+  }
+  .hero__price {
+    margin-top: 2rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.65rem;
+    padding-top: 1.5rem; border-top: 1px solid var(--petrol-700);
+  }
+  .hero__price b {
+    font-family: var(--font-display); font-size: 2.1rem; color: #fff; font-weight: 700;
+  }
+  .hero__cta { margin-top: 1.8rem; display: flex; flex-wrap: wrap; gap: 0.8rem; }
+
+  /* the composed right side — overlapping, off-grid */
+  .scene { position: relative; min-height: 430px; }
+  .scene__map {
+    position: absolute; inset: 6% -14% 12% 4%;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--petrol-700);
+    box-shadow: 0 40px 80px -40px rgba(0,0,0,0.9);
+  }
+  .scene__plate {
+    position: absolute; left: -6%; bottom: 16%; z-index: 3;
+    transform: rotate(-2.2deg);
+  }
+  .scene__alert {
+    position: absolute; right: -8%; top: 4%; z-index: 4;
+    width: min(310px, 78%); padding: 0.95rem 1.05rem;
+    background: var(--petrol-800); border: 1px solid var(--petrol-600);
+    border-left: 3px solid var(--alarm);
+    border-radius: var(--r-md);
+    box-shadow: 0 26px 50px -22px rgba(0,0,0,0.95);
+  }
+  .scene__stamp {
+    position: absolute; right: 2%; bottom: 6%; z-index: 3;
+    background: var(--sodium-500); color: var(--sodium-ink);
+    font-family: var(--font-mono); font-size: var(--t-xs); font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.5rem 0.8rem; border-radius: var(--r-sm);
+    box-shadow: 0 14px 28px -12px rgba(0,0,0,0.8);
+  }
+  @media (max-width: 900px) {
+    .scene { min-height: 360px; margin-top: 1rem; }
+    .scene__map { inset: 4% 0 10% 0; }
+    .scene__plate { left: 2%; }
+    .scene__alert { right: 0; width: min(290px, 86%); }
+  }
+
+  /* ---------- night section ---------- */
+  .night { padding: clamp(4rem, 9vw, 7rem) 0; border-top: 1px solid var(--petrol-700); }
+  .night__grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: clamp(2rem,5vw,4rem); }
+  @media (max-width: 860px) { .night__grid { grid-template-columns: 1fr; } }
+  .night h2 { font-size: clamp(2rem, 4.4vw, 3.2rem); color: #fff; }
+  .timeline { display: grid; gap: 0; margin-top: 0.5rem; }
+  .beat {
+    display: grid; grid-template-columns: 88px 1fr; gap: 1.4rem;
+    padding: 1.15rem 0; border-top: 1px solid var(--petrol-700);
+  }
+  .beat:last-child { border-bottom: 1px solid var(--petrol-700); }
+  .beat__t {
+    font-family: var(--font-mono); font-size: var(--t-sm); color: var(--sodium-500);
+    font-variant-numeric: tabular-nums; padding-top: 0.15rem;
+  }
+  .beat__h { font-weight: 600; color: #e8eef4; font-size: var(--t-md); }
+  .beat__p { color: #93a3b2; font-size: var(--t-sm); margin-top: 0.2rem; line-height: 1.55; }
+  .beat--them .beat__t { color: var(--slate); }
+
+  /* ---------- light band ---------- */
+  .band { padding: clamp(4rem, 9vw, 7rem) 0; }
+  .band h2 { font-size: clamp(2rem, 4.4vw, 3.2rem); }
+  .band__head { max-width: 60ch; }
+  .band p.lede { margin-top: 1rem; color: var(--ink-2); font-size: var(--t-md); }
+
+  /* ---------- pricing ---------- */
+  .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; margin-top: 2.6rem; }
+  @media (max-width: 880px) { .plans { grid-template-columns: 1fr; } }
+  .plan { padding: 1.6rem 1.5rem 1.5rem; display: flex; flex-direction: column; }
+  .plan--feature {
+    border-color: var(--sodium-500);
+    box-shadow: 0 0 0 1px var(--sodium-500), 0 18px 40px -26px rgba(16,20,24,0.5);
+  }
+  .plan__tag {
+    font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--slate);
+  }
+  .plan--feature .plan__tag { color: var(--sodium-600); }
+  .plan h3 { font-size: 1.9rem; margin-top: 0.3rem; }
+  .plan__price {
+    font-family: var(--font-display); font-size: 2.9rem; font-weight: 700;
+    margin-top: 0.9rem; line-height: 1;
+  }
+  .plan__price small { font-family: var(--font-body); font-size: 0.95rem; font-weight: 500; color: var(--slate); }
+  .plan__renew {
+    margin-top: 0.55rem; font-size: var(--t-sm); color: var(--ink-2);
+    padding: 0.4rem 0.6rem; background: var(--plate-dim); border-radius: var(--r-sm);
+    display: inline-block;
+  }
+  .plan ul { list-style: none; padding: 0; margin: 1.3rem 0 1.6rem; display: grid; gap: 0.6rem; }
+  .plan li { display: grid; grid-template-columns: 18px 1fr; gap: 0.6rem; font-size: var(--t-sm); align-items: start; }
+  .plan li svg { margin-top: 3px; color: var(--live); }
+  .plan .btn { margin-top: auto; }
+
+  /* ---------- switch ---------- */
+  .switch__grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem,5vw,4rem); align-items: center; }
+  @media (max-width: 860px) { .switch__grid { grid-template-columns: 1fr; } }
+  .sms {
+    background: var(--petrol-900); border-radius: var(--r-lg); padding: 1.4rem;
+    font-family: var(--font-mono); font-size: var(--t-sm); color: #d7e2ec;
+    border: 1px solid var(--petrol-700); display: grid; gap: 0.7rem;
+  }
+  .sms__line { display: grid; grid-template-columns: 22px 1fr; gap: 0.7rem; align-items: baseline; }
+  .sms__n { color: var(--sodium-500); }
+  .sms__cmd { color: #fff; }
+  .sms__note { color: var(--slate-2); font-size: var(--t-xs); }
+
+  /* ---------- proof ---------- */
+  .proof { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; margin-top: 2.4rem; }
+  @media (max-width: 780px) { .proof { grid-template-columns: 1fr; } }
+  .stat { padding: 1.5rem; }
+  .stat__n {
+    font-family: var(--font-display); font-size: 3.4rem; font-weight: 700; line-height: 0.9;
+    color: var(--sodium-500);
+  }
+  .stat__l { margin-top: 0.6rem; font-weight: 600; }
+  .stat__s { margin-top: 0.3rem; font-size: var(--t-sm); }
+
+  /* ---------- financier ---------- */
+  .fin__grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: clamp(2rem,5vw,4rem); align-items: center; }
+  @media (max-width: 860px) { .fin__grid { grid-template-columns: 1fr; } }
+  .queue { border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--petrol-700); }
+  .queue__hd {
+    display: grid; grid-template-columns: 1.4fr 0.8fr 1fr;
+    gap: 0.8rem; padding: 0.7rem 1rem; background: var(--petrol-850);
+    font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--slate-2);
+  }
+  .queue__row {
+    display: grid; grid-template-columns: 1.4fr 0.8fr 1fr;
+    gap: 0.8rem; padding: 0.85rem 1rem; align-items: center;
+    border-top: 1px solid var(--petrol-700); background: var(--petrol-800);
+    font-size: var(--t-sm);
+  }
+  .arrears { font-family: var(--font-mono); color: #ffb0b0; font-variant-numeric: tabular-nums; }
+
+  /* ---------- footer ---------- */
+  .foot { padding: 3rem 0 4rem; border-top: 1px solid var(--petrol-700); color: #8fa0b0; font-size: var(--t-sm); }
+  .foot__grid { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="nav surface-room" style="background-image:none">
+  <div class="wrap nav__inner">
+    <a href="#" class="brand">Fleet<em>View</em></a>
+    <nav class="nav__links">
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#switch">Switching</a>
+      <a href="#financiers">For financiers</a>
+      <a href="index.html" class="btn btn--primary" style="padding:.5em .95em;min-height:38px">See the app</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero surface-room">
+  <div class="wrap hero__grid">
+    <div>
+      <p class="eyebrow rise" style="--i:0">Vehicle &amp; motorbike tracking · Kenya</p>
+      <h1 class="rise" style="--i:1">Someone has to<br>watch it <span>all night.</span></h1>
+      <p class="hero__lede rise" style="--i:2">
+        FleetView tracks your car, boda or fleet — with theft alerts that arrive in
+        <strong style="color:#fff">seconds, not ten minutes</strong>, engine cut-off that only you
+        can authorise, and renewals that just work over M‑Pesa.
+      </p>
+
+      <div class="hero__price rise" style="--i:3">
+        <span class="muted sm">From</span>
+        <b class="num">KSh 7,500</b>
+        <span class="muted sm">installed &nbsp;·&nbsp; renewal <b class="num" style="font-size:1rem;color:#e8eef4">KSh 2,500</b>/year</span>
+      </div>
+      <p class="tiny muted rise" style="--i:3;margin-top:.5rem">
+        Printed here, not hidden behind a quote form.
+      </p>
+
+      <div class="hero__cta rise" style="--i:4">
+        <a href="#pricing" class="btn btn--primary btn--tap">See plans &amp; prices</a>
+        <a href="#switch" class="btn btn--ghost btn--tap">Already have a tracker?</a>
+      </div>
+    </div>
+
+    <!-- composed, overlapping scene -->
+    <div class="scene" aria-hidden="true">
+      <div class="scene__map map map--night rise" style="--i:2">
+        <div class="map__road map__road--major" style="left:-5%;right:-5%;top:44%;height:12px;transform:rotate(-9deg)"></div>
+        <div class="map__road" style="left:22%;top:0;bottom:0;width:7px"></div>
+        <div class="map__road" style="left:-5%;right:30%;top:74%;height:6px"></div>
+        <div class="map__trail" style="left:30%;top:36%;width:120px;height:70px"></div>
+        <div class="map__marker map__marker--alarm pulse" style="left:52%;top:52%">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round">
+            <path d="M12 2v9"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="scene__alert rise" style="--i:5">
+        <div class="row gap-1" style="justify-content:space-between">
+          <span class="status status--alarm"><span class="status__dot"></span>Power disconnected</span>
+          <span class="mono tiny muted">02:14</span>
+        </div>
+        <p style="color:#e8eef4;font-weight:600;margin-top:.5rem">KDL 904U · Ngumba Estate</p>
+        <p class="tiny muted" style="margin-top:.15rem">Last fix 8 seconds before the cut. Tap to view live.</p>
+      </div>
+
+      <div class="scene__plate rise" style="--i:6">
+        <span class="plate plate--lg" data-status="immobilized">
+          <span class="plate__strip"></span><span class="plate__text">KDL 904U</span>
+        </span>
+      </div>
+
+      <div class="scene__stamp rise" style="--i:7">Alert sent in 6s</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ THE NIGHT ============ -->
+<section class="night surface-room" id="how" style="background-image:none;background:var(--petrol-850)">
+  <div class="wrap night__grid">
+    <div>
+      <p class="eyebrow">What actually happens</p>
+      <h2 style="margin-top:.7rem">A thief cuts<br>the power first.</h2>
+      <p style="color:#93a3b2;margin-top:1.1rem;max-width:38ch">
+        Every tracker sees the same thing. What separates them is how fast you find out —
+        and whether the last known position went out before the unit died.
+      </p>
+    </div>
+
+    <div class="timeline">
+      <div class="beat">
+        <span class="beat__t">02:14:06</span>
+        <div>
+          <p class="beat__h">Battery lead cut</p>
+          <p class="beat__p">The tracker loses main power and falls back to its internal cell.</p>
+        </div>
+      </div>
+      <div class="beat">
+        <span class="beat__t">02:14:12</span>
+        <div>
+          <p class="beat__h">FleetView pushes the alarm — 6 seconds</p>
+          <p class="beat__p">Push and SMS together, carrying the last confirmed position and a live map link. Quiet hours are bypassed; this one always rings.</p>
+        </div>
+      </div>
+      <div class="beat">
+        <span class="beat__t">02:14:40</span>
+        <div>
+          <p class="beat__h">You share a recovery link</p>
+          <p class="beat__p">One tap creates an expiring live-location page for police or a recovery agent. No login, works on any phone.</p>
+        </div>
+      </div>
+      <div class="beat beat--them">
+        <span class="beat__t">02:24:00</span>
+        <div>
+          <p class="beat__h" style="color:#9fb0c0">Where the market average is</p>
+          <p class="beat__p">Ten minutes is the most-upvoted complaint about tracking apps in this region. Ten minutes is roughly six kilometres.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRICING ============ -->
+<section class="band surface-field" id="pricing">
+  <div class="wrap">
+    <div class="band__head">
+      <p class="eyebrow">Pricing</p>
+      <h2 style="margin-top:.7rem">Every figure, in the open.</h2>
+      <p class="lede">
+        Install price and renewal price, together, on the same line — because the renewal is
+        where the market hides its surprises. No quote form, no “from”, no reconnection fee in year one.
+      </p>
+    </div>
+
+    <div class="plans">
+      <article class="card plan rise" style="--i:0">
+        <span class="plan__tag">Boda &amp; tuk-tuk</span>
+        <h3>Boda</h3>
+        <div class="plan__price num">KSh 7,500 <small>installed</small></div>
+        <span class="plan__renew">then <b class="num">KSh 2,500</b> / year</span>
+        <ul>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> Live tracking &amp; 90-day history</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> Engine cut-off &amp; restore</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> Power-cut &amp; tamper alarms</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> Kiswahili app, data-saver mode</li>
+        </ul>
+        <a href="#" class="btn btn--ghost btn--block">Book an installer</a>
+      </article>
+
+      <article class="card plan plan--feature rise" style="--i:1">
+        <span class="plan__tag">Most cars</span>
+        <h3>Car Standard</h3>
+        <div class="plan__price num">KSh 9,500 <small>installed</small></div>
+        <span class="plan__renew">then <b class="num">KSh 3,000</b> / year</span>
+        <ul>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> Everything in Boda</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> 4G unit, airtime included</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> Geofences &amp; night-driving alerts</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> Shareable recovery link</li>
+        </ul>
+        <a href="#" class="btn btn--primary btn--block">Book an installer</a>
+      </article>
+
+      <article class="card plan rise" style="--i:2">
+        <span class="plan__tag">High value</span>
+        <h3>Car Premium</h3>
+        <div class="plan__price num">KSh 14,500 <small>installed</small></div>
+        <span class="plan__renew">then <b class="num">KSh 3,500</b> / year</span>
+        <ul>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> Everything in Standard</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> Jamming detection + instant last position</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> Backup battery unit</li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> Driver-behaviour reports for insurers</li>
+        </ul>
+        <a href="#" class="btn btn--ghost btn--block">Book an installer</a>
+      </article>
+    </div>
+
+    <p class="sm muted" style="margin-top:1.6rem">
+      Fleet pricing from <b class="num">KSh 9,000</b>/unit (10+). Financier volume tiers from
+      <b class="num">KSh 5,900</b>/unit. Installation is done by a certified technician near you,
+      typically within 48 hours.
+    </p>
+  </div>
+</section>
+
+<!-- ============ SWITCH ============ -->
+<section class="band surface-field" id="switch" style="background:var(--plate-dim);background-image:none">
+  <div class="wrap switch__grid">
+    <div>
+      <p class="eyebrow">Switching</p>
+      <h2 style="margin-top:.7rem">Keep your tracker.<br>Change your platform.</h2>
+      <p class="lede">
+        You already paid to have a box fitted under your dashboard. On most common units we can
+        simply point it at FleetView — three text messages, no garage visit, no new hardware,
+        no day without cover.
+      </p>
+      <p class="lede" style="font-size:var(--t-base)">
+        And we don’t start charging until your current subscription runs out. Bring the expiry
+        date from your old app; we’ll set your first renewal for the day after.
+      </p>
+      <a href="#" class="btn btn--primary btn--tap" style="margin-top:1.6rem">Check if your device is supported</a>
+    </div>
+
+    <div class="sms">
+      <p class="sms__note" style="margin-bottom:.3rem">Sent to the tracker’s SIM — by us, or by your installer</p>
+      <div class="sms__line"><span class="sms__n">1</span><span class="sms__cmd">apn••••••&nbsp;safaricom</span></div>
+      <div class="sms__line"><span class="sms__n">2</span><span class="sms__cmd">adminip••••••&nbsp;&lt;fleetview&gt;&nbsp;&lt;port&gt;</span></div>
+      <div class="sms__line"><span class="sms__n">3</span><span class="sms__cmd">gprs••••••</span></div>
+      <hr class="divider" style="background:var(--petrol-700)">
+      <p class="sms__note">
+        Your unit reports to us from the next fix. History stays with your old provider —
+        everything from the switch onward is yours here.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROOF ============ -->
+<section class="band surface-field">
+  <div class="wrap">
+    <div class="band__head">
+      <p class="eyebrow">What we hold ourselves to</p>
+      <h2 style="margin-top:.7rem">Numbers, not adjectives.</h2>
+    </div>
+    <div class="proof">
+      <div class="card stat rise" style="--i:0">
+        <div class="stat__n num">30s</div>
+        <p class="stat__l">Critical alert, worst case</p>
+        <p class="stat__s muted">Power cut, jamming, tamper and SOS go out on push and SMS together, within 30 seconds at the 95th percentile.</p>
+      </div>
+      <div class="card stat rise" style="--i:1">
+        <div class="stat__n num">10s</div>
+        <p class="stat__l">Position latency</p>
+        <p class="stat__s muted">From the device reporting to the marker moving on your screen, while the vehicle is in motion.</p>
+      </div>
+      <div class="card stat rise" style="--i:2">
+        <div class="stat__n num">99.5%</div>
+        <p class="stat__l">Tracking uptime</p>
+        <p class="stat__s muted">And when we do go down, your device keeps recording and back-fills the gap on reconnect.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINANCIERS ============ -->
+<section class="night surface-room" id="financiers">
+  <div class="wrap fin__grid">
+    <div>
+      <p class="eyebrow">For asset financiers &amp; SACCOs</p>
+      <h2 style="margin-top:.7rem;font-size:clamp(1.9rem,4vw,2.9rem)">Collateral you can actually see.</h2>
+      <p style="color:#93a3b2;margin-top:1.1rem;max-width:46ch">
+        Link every unit to its loan. Watch arrears buckets, not spreadsheets. Flag defaulters in
+        bulk — then confirm one by one, with a human name against every decision and a safety
+        check on every vehicle.
+      </p>
+      <ul style="list-style:none;padding:0;margin:1.6rem 0 0;display:grid;gap:.75rem;color:#c3cedb;font-size:var(--t-sm)">
+        <li>Portfolio dashboard — units, online rate, arrears ageing, immobilised count</li>
+        <li>Repayment status straight from your loan system by webhook or CSV</li>
+        <li>Batch flag → review → confirm, with a full audit trail</li>
+        <li>Recovery links for police and agents, expiring and revocable</li>
+      </ul>
+      <a href="#" class="btn btn--primary btn--tap" style="margin-top:1.8rem">Book a portfolio walkthrough</a>
+    </div>
+
+    <div class="queue" aria-hidden="true">
+      <div class="queue__hd"><span>Unit</span><span>Arrears</span><span>Safety check</span></div>
+      <div class="queue__row">
+        <span class="plate plate--sm" data-status="parked"><span class="plate__strip"></span><span class="plate__text">KMFB 421C</span></span>
+        <span class="arrears">21 d</span>
+        <span class="status status--live"><span class="status__dot"></span>Stationary 34m</span>
+      </div>
+      <div class="queue__row">
+        <span class="plate plate--sm" data-status="parked"><span class="plate__strip"></span><span class="plate__text">KMEZ 108B</span></span>
+        <span class="arrears">18 d</span>
+        <span class="status status--live"><span class="status__dot"></span>Stationary 12m</span>
+      </div>
+      <div class="queue__row" style="opacity:.62">
+        <span class="plate plate--sm" data-status="live"><span class="plate__strip"></span><span class="plate__text">KMDL 764F</span></span>
+        <span class="arrears">15 d</span>
+        <span class="status status--alarm"><span class="status__dot"></span>Moving — blocked</span>
+      </div>
+      <div class="queue__row" style="opacity:.62">
+        <span class="plate plate--sm" data-status="offline"><span class="plate__strip"></span><span class="plate__text">KMCA 330J</span></span>
+        <span class="arrears">44 d</span>
+        <span class="status status--offline"><span class="status__dot"></span>Offline 3 d</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="foot surface-room" style="background-image:none;background:var(--petrol-900)">
+  <div class="wrap foot__grid">
+    <div style="max-width:34ch">
+      <a href="#" class="brand" style="font-size:1.25rem">Fleet<em>View</em></a>
+      <p style="margin-top:.8rem">
+        Vehicle and motorbike tracking built in Kenya. Registered data controller with the ODPC.
+      </p>
+    </div>
+    <div>
+      <p style="color:#c3cedb;font-weight:600;margin-bottom:.55rem">Product</p>
+      <p>Car tracking · Boda tracking · Fleet · Financier console</p>
+    </div>
+    <div>
+      <p style="color:#c3cedb;font-weight:600;margin-bottom:.55rem">Talk to us</p>
+      <p class="mono">0700 000 000 · WhatsApp<br>Mon–Sun, 07:00–19:00 EAT<br>Theft line 24/7</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

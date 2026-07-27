@@ -1,0 +1,392 @@
+@import url("https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600;700&display=swap");
+
+/* ============================================================
+   FleetView — "Instrument at night"
+   Materials: reflective plate white · hazard-yellow commercial
+   plating · sodium street light · wet tarmac.
+   Light = field/consumer.  Dark = control room.
+   ============================================================ */
+
+:root {
+  /* --- surfaces: petrol (dark, blue-leaning — never neutral black) --- */
+  --petrol-900: #0f1720;
+  --petrol-850: #131d27;
+  --petrol-800: #16212c;
+  --petrol-750: #1c2836;
+  --petrol-700: #22303e;
+  --petrol-600: #2e3f50;
+
+  /* --- surfaces: plate (light, warm reflective) --- */
+  --plate: #f7f5f0;
+  --plate-dim: #ece8e0;
+  --paper: #ffffff;
+
+  /* --- brand accent: sodium lamp --- */
+  --sodium-400: #ffb85c;
+  --sodium-500: #f2a03d;
+  --sodium-600: #d8842a;
+  --sodium-ink: #2a1a08;
+
+  /* --- ink --- */
+  --ink: #101418;
+  --ink-2: #38424c;
+  --slate: #6b7a88;
+  --slate-2: #97a4af;
+
+  /* --- telemetry semantics ONLY (never decorative) --- */
+  --live: #1e9e62;
+  --live-dark: #35c07d;
+  --alarm: #d33a3a;
+  --alarm-dark: #ff6b6b;
+  --hazard: #e8b90b;
+
+  /* --- type --- */
+  --font-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --font-body: "IBM Plex Sans", ui-sans-serif, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* --- scale (1.25) --- */
+  --t-xs: 0.75rem;
+  --t-sm: 0.8125rem;
+  --t-base: 0.9375rem;
+  --t-md: 1.0625rem;
+  --t-lg: 1.3125rem;
+  --t-xl: 1.75rem;
+  --t-2xl: 2.5rem;
+  --t-3xl: 3.75rem;
+  --t-4xl: 5.5rem;
+
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 14px;
+
+  --tap: 52px;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--t-base);
+  line-height: 1.55;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+p { margin: 0; }
+a { color: inherit; }
+
+/* tabular numerals wherever a value changes in place */
+.num, .mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--slate);
+}
+
+/* ============================================================
+   Surfaces — atmospheric depth, never flat
+   ============================================================ */
+
+/* Field / consumer: warm tonal wash + 45° reflective hatch */
+.surface-field {
+  background-color: var(--plate);
+  background-image:
+    repeating-linear-gradient(45deg,
+      rgba(16, 20, 24, 0.028) 0 1px,
+      transparent 1px 7px),
+    radial-gradient(120% 80% at 50% 0%,
+      #fffdf8 0%, var(--plate) 55%, #eee9e0 100%);
+  color: var(--ink);
+}
+
+/* Control room: petrol black + sodium glow from a lamp out of frame */
+.surface-room {
+  background-color: var(--petrol-900);
+  background-image:
+    radial-gradient(90% 55% at 78% -8%,
+      rgba(242, 160, 61, 0.16) 0%,
+      rgba(242, 160, 61, 0.04) 40%,
+      transparent 72%),
+    linear-gradient(180deg, #16212c 0%, #0f1720 60%);
+  color: #e8eef4;
+}
+
+.surface-room .eyebrow { color: var(--slate-2); }
+
+/* ============================================================
+   THE SIGNATURE: plate block
+   A physical Kenyan plate; left strip carries live status.
+   ============================================================ */
+.plate {
+  display: inline-flex;
+  align-items: stretch;
+  background: linear-gradient(178deg, #ffffff 0%, #f2efe8 100%);
+  border: 1px solid #cdc7bb;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 2px 5px rgba(16, 20, 24, 0.16);
+  line-height: 1;
+  flex: none;
+}
+
+.plate__strip {
+  width: 9px;
+  flex: none;
+  background: var(--slate-2);
+}
+
+.plate__text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.4rem;
+  letter-spacing: 0.055em;
+  color: #101418;
+  padding: 0.34em 0.6em 0.28em;
+  white-space: nowrap;
+}
+
+.plate[data-status="live"]    .plate__strip { background: var(--live); }
+.plate[data-status="parked"]  .plate__strip { background: var(--slate); }
+.plate[data-status="immobilized"] .plate__strip { background: var(--alarm); }
+.plate[data-status="offline"] .plate__strip {
+  background: repeating-linear-gradient(135deg,
+    var(--slate-2) 0 4px, #cfd8e0 4px 8px);
+}
+
+.plate--sm .plate__text { font-size: 1.05rem; padding: 0.3em 0.5em 0.24em; }
+.plate--sm .plate__strip { width: 7px; }
+.plate--lg .plate__text { font-size: 2.6rem; letter-spacing: 0.05em; }
+.plate--lg .plate__strip { width: 14px; }
+.plate--xl .plate__text { font-size: clamp(2.6rem, 7vw, 4.6rem); }
+.plate--xl .plate__strip { width: 18px; }
+
+/* ============================================================
+   Status
+   colour is never the only signal — always a label or shape
+   ============================================================ */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.status__dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  flex: none;
+  background: currentColor;
+}
+
+.status--live { color: var(--live); }
+.surface-room .status--live { color: var(--live-dark); }
+.status--parked { color: var(--slate); }
+.status--alarm { color: var(--alarm); }
+.surface-room .status--alarm { color: var(--alarm-dark); }
+.status--offline { color: var(--slate-2); }
+.status--offline .status__dot {
+  background: transparent;
+  border: 2px solid currentColor;
+}
+.status--live .status__dot { box-shadow: 0 0 0 3px rgba(30, 158, 98, 0.18); }
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn {
+  font-family: var(--font-body);
+  font-size: var(--t-base);
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  padding: 0.7em 1.15em;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.12s var(--ease), background-color 0.15s var(--ease),
+              border-color 0.15s var(--ease);
+}
+.btn:active { transform: translateY(1px); }
+
+.btn--primary {
+  background: var(--sodium-500);
+  color: var(--sodium-ink);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset;
+}
+.btn--primary:hover { background: var(--sodium-400); }
+
+.btn--ghost {
+  background: transparent;
+  border-color: rgba(16, 20, 24, 0.18);
+  color: var(--ink);
+}
+.btn--ghost:hover { border-color: rgba(16, 20, 24, 0.4); }
+.surface-room .btn--ghost {
+  border-color: rgba(232, 238, 244, 0.22);
+  color: #e8eef4;
+}
+.surface-room .btn--ghost:hover { border-color: rgba(232, 238, 244, 0.5); }
+
+/* destructive: consequence is never hidden behind a soft colour */
+.btn--danger {
+  background: var(--alarm);
+  color: #fff;
+}
+.btn--danger:hover { background: #b93030; }
+
+.btn--block { width: 100%; }
+.btn--tap { min-height: var(--tap); font-size: var(--t-md); }
+
+:where(a, button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--sodium-500);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* ============================================================
+   Cards / rows
+   ============================================================ */
+.card {
+  background: var(--paper);
+  border: 1px solid rgba(16, 20, 24, 0.09);
+  border-radius: var(--r-lg);
+  box-shadow: 0 1px 2px rgba(16, 20, 24, 0.04),
+              0 6px 18px -12px rgba(16, 20, 24, 0.35);
+}
+.surface-room .card {
+  background: var(--petrol-800);
+  border-color: var(--petrol-700);
+  box-shadow: none;
+}
+
+.divider { height: 1px; background: rgba(16, 20, 24, 0.09); border: 0; }
+.surface-room .divider { background: var(--petrol-700); }
+
+/* ============================================================
+   The one orchestrated moment: staggered rise on load
+   ============================================================ */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes pulse-once {
+  0%   { box-shadow: 0 0 0 0 rgba(30, 158, 98, 0.5); }
+  100% { box-shadow: 0 0 0 12px rgba(30, 158, 98, 0); }
+}
+
+.rise {
+  animation: rise 0.62s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+.pulse { animation: pulse-once 1.5s var(--ease) 0.5s 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .rise { animation: none; opacity: 1; transform: none; }
+}
+
+/* ============================================================
+   Map abstraction (not a real SDK — a considered stand-in)
+   ============================================================ */
+.map {
+  position: relative;
+  overflow: hidden;
+  background-color: #e4e7e2;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.7) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.7) 1px, transparent 1px),
+    radial-gradient(100% 100% at 30% 20%, #eef1ea 0%, #dfe3dc 60%, #d3d8d1 100%);
+  background-size: 44px 44px, 44px 44px, 100% 100%;
+}
+.map--night {
+  background-color: #101a22;
+  background-image:
+    linear-gradient(rgba(120, 160, 190, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 160, 190, 0.09) 1px, transparent 1px),
+    radial-gradient(100% 100% at 70% 15%, #1b2b38 0%, #121d26 60%, #0d151c 100%);
+  background-size: 44px 44px, 44px 44px, 100% 100%;
+}
+.map__road {
+  position: absolute;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(16,20,24,0.06);
+}
+.map--night .map__road { background: #24384a; box-shadow: none; }
+.map__road--major { background: #ffe9c6; }
+.map--night .map__road--major { background: #33506a; }
+
+.map__marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 38px; height: 38px;
+  border-radius: 50% 50% 50% 8px;
+  background: var(--sodium-500);
+  border: 2px solid #fff;
+  box-shadow: 0 6px 14px rgba(16, 20, 24, 0.35);
+  rotate: -45deg;
+}
+.map__marker > * { rotate: 45deg; }
+.map__marker--alarm { background: var(--alarm); }
+
+.map__trail {
+  position: absolute;
+  border-left: 2px dashed rgba(242, 160, 61, 0.85);
+  border-bottom: 2px dashed rgba(242, 160, 61, 0.85);
+  border-radius: 0 0 0 60%;
+}
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+.stack { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; }
+.gap-1 { gap: 0.5rem; } .gap-2 { gap: 0.85rem; } .gap-3 { gap: 1.35rem; }
+.grow { flex: 1; min-width: 0; }
+.muted { color: var(--slate); }
+.surface-room .muted { color: var(--slate-2); }
+.tiny { font-size: var(--t-xs); }
+.sm { font-size: var(--t-sm); }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}

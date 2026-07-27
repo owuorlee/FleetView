@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FleetView — design system &amp; interfaces</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { background: var(--petrol-900); color: #dfe7ee; }
+  .wrap { width: min(1180px, 92vw); margin-inline: auto; }
+
+  .masthead { padding: clamp(3rem,7vw,5.5rem) 0 clamp(2.5rem,5vw,4rem); }
+  .masthead h1 { font-size: clamp(2.8rem,6.5vw,4.6rem); color:#fff; }
+  .masthead h1 em { color: var(--sodium-500); font-style: normal; }
+  .masthead p { color:#a3b2c0; max-width:62ch; margin-top:1.2rem; font-size:var(--t-md); line-height:1.6; }
+
+  .direction {
+    display:grid; grid-template-columns: 1.2fr .8fr; gap:clamp(1.5rem,4vw,3rem);
+    padding:1.8rem; border-radius:var(--r-lg); border:1px solid var(--petrol-700);
+    background:var(--petrol-850); margin-bottom:3.5rem; align-items:center;
+  }
+  @media (max-width:820px){ .direction{ grid-template-columns:1fr; } }
+  .direction h2 { color:#fff; font-size:1.6rem; }
+
+  .swatches { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1.1rem; }
+  .sw { display:grid; gap:.3rem; }
+  .sw i { display:block; width:56px; height:40px; border-radius:6px; border:1px solid rgba(255,255,255,.12); }
+  .sw span { font-family:var(--font-mono); font-size:10px; color:#8fa0b0; }
+
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:1.2rem; padding-bottom:4rem; }
+  .tile {
+    display:flex; flex-direction:column; padding:1.4rem; text-decoration:none; color:inherit;
+    transition:transform .16s var(--ease), border-color .16s var(--ease);
+  }
+  .tile:hover { transform:translateY(-3px); border-color:var(--sodium-500); }
+  .tile__env {
+    font-family:var(--font-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+    padding:.2rem .5rem; border-radius:3px; align-self:flex-start;
+  }
+  .tile__env--light { background:var(--plate); color:var(--ink); }
+  .tile__env--dark { background:var(--petrol-700); color:#c3cedb; }
+  .tile h3 { color:#fff; font-size:1.7rem; margin-top:.8rem; }
+  .tile p { color:#93a3b2; font-size:var(--t-sm); margin-top:.5rem; line-height:1.55; flex:1; }
+  .tile__go { color:var(--sodium-500); font-weight:600; font-size:var(--t-sm); margin-top:1.1rem; }
+</style>
+</head>
+<body>
+
+<div class="wrap masthead">
+  <p class="eyebrow">FleetView · design system &amp; interfaces</p>
+  <h1 style="margin-top:1rem">Instrument<br><em>at night.</em></h1>
+  <p>
+    Four products sharing one design language, separated by <strong style="color:#fff">environment and
+    stake</strong> — not by screen size. Built from the materials of the Kenyan road: reflective plate
+    white, hazard-yellow commercial plating, sodium street light, wet tarmac.
+  </p>
+</div>
+
+<div class="wrap">
+  <section class="direction">
+    <div>
+      <p class="eyebrow">The signature</p>
+      <h2 style="margin-top:.6rem">The plate block</h2>
+      <p style="color:#a3b2c0;margin-top:.8rem;font-size:var(--t-sm);line-height:1.6;max-width:52ch">
+        In Kenya the registration plate <em>is</em> the vehicle’s identity — competitor teardown found
+        account usernames, device names and screen titles are all the plate. So the plate becomes our
+        universal vehicle avatar, with a status strip on its edge carrying live state without extra chrome.
+        It appears in list rows, map callouts, alerts, receipts and the financier’s batch table.
+      </p>
+      <div class="swatches">
+        <div class="sw"><i style="background:var(--petrol-900)"></i><span>petrol</span></div>
+        <div class="sw"><i style="background:var(--plate)"></i><span>plate</span></div>
+        <div class="sw"><i style="background:var(--sodium-500)"></i><span>sodium</span></div>
+        <div class="sw"><i style="background:var(--live)"></i><span>live</span></div>
+        <div class="sw"><i style="background:var(--hazard)"></i><span>hazard</span></div>
+        <div class="sw"><i style="background:var(--alarm)"></i><span>alarm</span></div>
+      </div>
+    </div>
+    <div style="display:grid;gap:.7rem;justify-items:center">
+      <span class="plate plate--lg" data-status="live"><span class="plate__strip"></span><span class="plate__text">KMFB 421C</span></span>
+      <span class="plate" data-status="parked"><span class="plate__strip"></span><span class="plate__text">KDA 123A</span></span>
+      <span class="plate plate--sm" data-status="immobilized"><span class="plate__strip"></span><span class="plate__text">KMEZ 108B</span></span>
+      <span class="plate plate--sm" data-status="offline"><span class="plate__strip"></span><span class="plate__text">KMCA 330J</span></span>
+      <div class="row gap-2" style="margin-top:.3rem;flex-wrap:wrap;justify-content:center">
+        <span class="status status--live"><span class="status__dot"></span>Moving</span>
+        <span class="status status--parked"><span class="status__dot"></span>Parked</span>
+        <span class="status status--alarm"><span class="status__dot"></span>Cut</span>
+        <span class="status status--offline"><span class="status__dot"></span>Offline</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="cards">
+    <a class="card tile rise" style="--i:0" href="website.html">
+      <span class="tile__env tile__env--dark">Public · dark</span>
+      <h3>Website</h3>
+      <p>
+        Marketing site. Prices published in the open — the opposite of a market that hides renewals
+        behind quote forms. Includes the “keep your tracker, change your platform” switch offer.
+      </p>
+      <span class="tile__go">Open →</span>
+    </a>
+
+    <a class="card tile rise" style="--i:1" href="app-owner.html">
+      <span class="tile__env tile__env--light">Field · light</span>
+      <h3>Rider &amp; owner</h3>
+      <p>
+        Outdoors, glare, dust, a 2 GB phone. One question answered per screen, 46–52px targets,
+        Kiswahili as a first-class default. Home, live map, two-step engine cut, alerts.
+      </p>
+      <span class="tile__go">Open →</span>
+    </a>
+
+    <a class="card tile rise" style="--i:2" href="console-financier.html">
+      <span class="tile__env tile__env--dark">Control room · dark</span>
+      <h3>Financier ops</h3>
+      <p>
+        The highest-stake interface we build — an agent here can stop a stranger’s motorbike.
+        Safety verdict on every row, batch flag → review → confirm, a person’s name against every action.
+      </p>
+      <span class="tile__go">Open →</span>
+    </a>
+
+    <a class="card tile rise" style="--i:3" href="app-installer.html">
+      <span class="tile__env tile__env--light">Field · light</span>
+      <h3>Installer</h3>
+      <p>
+        A job, not a vehicle. Camera-first, IMEI scanned rather than typed, and a cut/restore test
+        that blocks job completion because a mis-wired relay is our biggest liability.
+      </p>
+      <span class="tile__go">Open →</span>
+    </a>
+  </div>
+</div>
+
+</body>
+</html>
