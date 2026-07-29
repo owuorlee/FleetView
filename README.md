@@ -1,4 +1,11 @@
-# Kenya Vehicle & Motorbike Tracking Platform — Planning Documents
+# Kenya Vehicle & Motorbike Tracking Platform
+
+> ### 👉 New to this project? Start at [`docs/handoff/AGENT_ONBOARDING.md`](docs/handoff/AGENT_ONBOARDING.md)
+> The [`docs/handoff/`](docs/handoff/) folder is the complete, self-contained handoff package:
+> what's built, what's faked, how to run it, and every remaining task to production.
+> Read it before writing any code.
+
+## Planning documents
 
 Working name: **FleetView**. Architecture: self-hosted **Traccar** core + custom NestJS/Flutter/React layer ("Path B"). Drafted 2026-07-06.
 
